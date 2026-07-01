@@ -2,19 +2,17 @@
 
 import { useState } from 'react'
 import Header from '@/components/layout/Header'
-import { AI_TASKS } from '@/lib/data'
+import { useStore } from '@/lib/store'
 import { cn } from '@/lib/utils'
 import { Brain, CheckCircle, Circle, Zap, AlertCircle, Clock } from 'lucide-react'
 
 export default function TasksPage() {
-  const [tasks, setTasks] = useState(AI_TASKS)
+  const { tasks, toggleTask } = useStore()
   const [generating, setGenerating] = useState(false)
-
-  const toggle = (id: string) => setTasks(prev => prev.map(t => t.id === id ? { ...t, done: !t.done } : t))
 
   const handleGenerate = () => {
     setGenerating(true)
-    setTimeout(() => setGenerating(false), 2000)
+    setTimeout(() => setGenerating(false), 1800)
   }
 
   const priorityMap = {
@@ -34,7 +32,7 @@ export default function TasksPage() {
       <Header title="AI Task Manager" />
 
       <div className="p-6 max-w-3xl mx-auto space-y-6">
-        {/* Header */}
+        {/* Header banner */}
         <div className="bg-gradient-to-r from-[#0f1f3d] to-[#1e3a8a] rounded-2xl p-6 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center">
@@ -74,6 +72,7 @@ export default function TasksPage() {
         {/* Task Groups */}
         {(['high', 'medium', 'low'] as const).map(priority => {
           const group = grouped[priority]
+          if (group.length === 0) return null
           const { label, color, icon: Icon, iconColor } = priorityMap[priority]
           return (
             <div key={priority}>
@@ -88,10 +87,10 @@ export default function TasksPage() {
                     key={task.id}
                     className={cn(
                       'flex items-start gap-3 p-4 rounded-xl border transition-all',
-                      task.done ? 'bg-slate-50 opacity-60' : color
+                      task.done ? 'bg-slate-50 opacity-60 border-slate-100' : color
                     )}
                   >
-                    <button onClick={() => toggle(task.id)} className="flex-shrink-0 mt-0.5">
+                    <button onClick={() => toggleTask(task.id)} className="flex-shrink-0 mt-0.5">
                       {task.done
                         ? <CheckCircle size={18} className="text-emerald-500" />
                         : <Circle size={18} className="text-slate-400" />
