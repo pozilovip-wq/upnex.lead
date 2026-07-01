@@ -3,10 +3,11 @@
 import { useState } from 'react'
 import Header from '@/components/layout/Header'
 import AddStudentModal from '@/components/students/AddStudentModal'
+import AIAssistant from '@/components/ai/AIAssistant'
 import { useStore } from '@/lib/store'
 import { Student } from '@/lib/data'
 import { cn, getLeadScoreColor, getStatusColor, formatCurrency, getInitials } from '@/lib/utils'
-import { Search, Filter, Plus, ChevronRight, Mail, Phone, MapPin, Brain, Star, Flame, Users, Trash2, Edit3 } from 'lucide-react'
+import { Search, Filter, Plus, ChevronRight, Mail, Phone, MapPin, Brain, Star, Users, Trash2 } from 'lucide-react'
 
 export default function StudentsPage() {
   const { students, deleteStudent } = useStore()
@@ -80,7 +81,7 @@ export default function StudentsPage() {
           </div>
 
           {/* Student List */}
-          <div className="flex-1 overflow-y-auto scrollbar-thin">
+          <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin">
             {filtered.length === 0 && (
               <div className="flex flex-col items-center justify-center h-48 text-slate-400">
                 <Users size={32} className="mb-2 opacity-30" />
@@ -125,7 +126,7 @@ export default function StudentsPage() {
 
         {/* Detail Panel */}
         {selected && (
-          <div className="flex-1 overflow-y-auto scrollbar-thin p-6 space-y-5 animate-fade-in">
+          <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin p-6 space-y-5 animate-fade-in">
             {/* Profile Header */}
             <div className="bg-gradient-to-r from-[#0f1f3d] to-[#1e40af] rounded-2xl p-6">
               <div className="flex items-start gap-4">
@@ -300,17 +301,8 @@ export default function StudentsPage() {
               </div>
             )}
 
-            {/* AI Follow-up */}
-            <div className="bg-gradient-to-r from-slate-800 to-slate-900 rounded-2xl p-5">
-              <div className="flex items-center gap-2 mb-2">
-                <Flame size={15} className="text-orange-400" />
-                <h3 className="text-white font-semibold text-sm">Generate AI Follow-up Message</h3>
-              </div>
-              <p className="text-slate-400 text-xs mb-3">AI will craft a personalized follow-up based on this student&apos;s profile.</p>
-              <button className="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold py-2.5 rounded-xl transition-colors">
-                ✨ Generate Follow-up with AI
-              </button>
-            </div>
+            {/* AI Assistant */}
+            <AIAssistant student={selected} />
           </div>
         )}
 
