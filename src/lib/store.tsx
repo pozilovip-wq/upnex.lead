@@ -62,8 +62,8 @@ function saveToStorage(key: string, value: unknown) {
 }
 
 export function StoreProvider({ children }: { children: ReactNode }) {
-  const [students, setStudents] = useState<Student[]>(() => loadFromStorage('upnex_students', MOCK_STUDENTS))
-  const [tasks, setTasks] = useState<Task[]>(() => loadFromStorage('upnex_tasks', AI_TASKS))
+  const [students, setStudents] = useState<Student[]>(() => loadFromStorage<Student[]>('upnex_students', MOCK_STUDENTS))
+  const [tasks, setTasks] = useState<Task[]>(() => loadFromStorage<Task[]>('upnex_tasks', AI_TASKS as Task[]))
 
   // Persist every change
   useEffect(() => { saveToStorage('upnex_students', students) }, [students])
