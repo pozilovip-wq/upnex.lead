@@ -10,12 +10,12 @@ interface Props {
 }
 
 const SOURCES = [
-  { id: 'instagram', label: 'Instagram', icon: Camera, color: 'from-pink-500 to-purple-600', bg: 'bg-pink-50 border-pink-200 text-pink-700' },
-  { id: 'telegram', label: 'Telegram', icon: Send, color: 'from-blue-400 to-blue-600', bg: 'bg-blue-50 border-blue-200 text-blue-700' },
-  { id: 'whatsapp', label: 'WhatsApp', icon: MessageCircle, color: 'from-green-400 to-green-600', bg: 'bg-green-50 border-green-200 text-green-700' },
-  { id: 'phone', label: 'Phone Call', icon: Phone, color: 'from-slate-400 to-slate-600', bg: 'bg-slate-50 border-slate-200 text-slate-700' },
-  { id: 'website', label: 'Website', icon: Globe, color: 'from-indigo-400 to-indigo-600', bg: 'bg-indigo-50 border-indigo-200 text-indigo-700' },
-  { id: 'referral', label: 'Referral', icon: User, color: 'from-amber-400 to-amber-600', bg: 'bg-amber-50 border-amber-200 text-amber-700' },
+  { id: 'instagram', label: 'Instagram', icon: Camera, activeClass: 'bg-gradient-to-br from-pink-500 to-purple-600 text-white border-transparent shadow-lg shadow-pink-200', inactiveClass: 'bg-pink-50 border-pink-200 text-pink-600 hover:bg-pink-100' },
+  { id: 'telegram', label: 'Telegram', icon: Send, activeClass: 'bg-gradient-to-br from-sky-400 to-blue-600 text-white border-transparent shadow-lg shadow-blue-200', inactiveClass: 'bg-sky-50 border-sky-200 text-sky-600 hover:bg-sky-100' },
+  { id: 'whatsapp', label: 'WhatsApp', icon: MessageCircle, activeClass: 'bg-gradient-to-br from-green-400 to-emerald-600 text-white border-transparent shadow-lg shadow-green-200', inactiveClass: 'bg-green-50 border-green-200 text-green-600 hover:bg-green-100' },
+  { id: 'phone', label: 'Phone Call', icon: Phone, activeClass: 'bg-gradient-to-br from-slate-500 to-slate-700 text-white border-transparent shadow-lg shadow-slate-200', inactiveClass: 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100' },
+  { id: 'website', label: 'Website', icon: Globe, activeClass: 'bg-gradient-to-br from-indigo-400 to-violet-600 text-white border-transparent shadow-lg shadow-indigo-200', inactiveClass: 'bg-indigo-50 border-indigo-200 text-indigo-600 hover:bg-indigo-100' },
+  { id: 'referral', label: 'Referral', icon: User, activeClass: 'bg-gradient-to-br from-amber-400 to-orange-500 text-white border-transparent shadow-lg shadow-amber-200', inactiveClass: 'bg-amber-50 border-amber-200 text-amber-600 hover:bg-amber-100' },
 ]
 
 const ENGLISH_TESTS = ['IELTS', 'TOEFL', 'Duolingo', 'SAT', 'None yet']
@@ -103,7 +103,7 @@ export default function AddLeadModal({ onClose }: Props) {
     return (
       <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center">
         <div className="bg-white rounded-3xl p-10 text-center shadow-2xl animate-fade-in">
-          <div className={cn('w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 bg-gradient-to-br', selectedSource.color)}>
+          <div className={cn('w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4', selectedSource.activeClass)}>
             <selectedSource.icon size={28} className="text-white" />
           </div>
           <h3 className="text-xl font-bold text-slate-800 mb-1">Lead Added!</h3>
@@ -141,9 +141,7 @@ export default function AddLeadModal({ onClose }: Props) {
                     onClick={() => set('source', s.id)}
                     className={cn(
                       'flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border-2 text-xs font-semibold transition-all',
-                      active
-                        ? `border-transparent bg-gradient-to-br ${s.color} text-white shadow-lg scale-105`
-                        : 'border-slate-200 text-slate-500 hover:border-slate-300 hover:bg-slate-50'
+                      active ? s.activeClass : s.inactiveClass
                     )}
                   >
                     <Icon size={16} />
@@ -260,8 +258,8 @@ export default function AddLeadModal({ onClose }: Props) {
           <button
             onClick={handleSubmit}
             className={cn(
-              'flex-1 py-2.5 text-white text-sm font-semibold rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 bg-gradient-to-r',
-              selectedSource.color,
+              'flex-1 py-2.5 text-sm font-semibold rounded-xl transition-all flex items-center justify-center gap-2',
+              selectedSource.activeClass,
             )}
           >
             <Brain size={14} />
