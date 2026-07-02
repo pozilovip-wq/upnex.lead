@@ -3,18 +3,20 @@
 import { useState } from 'react'
 import Header from '@/components/layout/Header'
 import AddStudentModal from '@/components/students/AddStudentModal'
+import AddLeadModal from '@/components/students/AddLeadModal'
 import AIAssistant from '@/components/ai/AIAssistant'
 import { useStore } from '@/lib/store'
 import { Student } from '@/lib/data'
 import { cn, getLeadScoreColor, getStatusColor, formatCurrency, getInitials } from '@/lib/utils'
-import { Search, Filter, Plus, ChevronRight, Mail, Phone, MapPin, Brain, Star, Users, Trash2 } from 'lucide-react'
+import { Search, Filter, Plus, ChevronRight, Mail, Phone, MapPin, Brain, Star, Users, Trash2, Zap } from 'lucide-react'
 
 export default function StudentsPage() {
   const { students, deleteStudent } = useStore()
   const [search, setSearch] = useState('')
   const [filterScore, setFilterScore] = useState<string>('all')
   const [selected, setSelected] = useState<Student | null>(null)
-  const [showModal, setShowModal] = useState(false)
+  const [showLeadModal, setShowLeadModal] = useState(false)
+  const [showStudentModal, setShowStudentModal] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
 
   const filtered = students.filter(s => {
@@ -55,11 +57,20 @@ export default function StudentsPage() {
                 <Filter size={15} className="text-slate-500" />
               </button>
               <button
-                onClick={() => setShowModal(true)}
+                onClick={() => setShowLeadModal(true)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-pink-500 hover:bg-pink-600 transition-colors"
+                title="Quick lead entry"
+              >
+                <Zap size={14} className="text-white" />
+                <span className="text-white text-xs font-semibold hidden sm:inline">Add Lead</span>
+              </button>
+              <button
+                onClick={() => setShowStudentModal(true)}
                 className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 transition-colors"
+                title="Full student profile"
               >
                 <Plus size={15} className="text-white" />
-                <span className="text-white text-xs font-semibold hidden sm:inline">Add Lead</span>
+                <span className="text-white text-xs font-semibold hidden sm:inline">Add Student</span>
               </button>
             </div>
 
@@ -86,8 +97,8 @@ export default function StudentsPage() {
               <div className="flex flex-col items-center justify-center h-48 text-slate-400">
                 <Users size={32} className="mb-2 opacity-30" />
                 <p className="text-sm">No students found</p>
-                <button onClick={() => setShowModal(true)} className="mt-3 text-xs text-blue-600 font-medium hover:underline">
-                  + Add first student
+                <button onClick={() => setShowLeadModal(true)} className="mt-3 text-xs text-blue-600 font-medium hover:underline">
+                  + Add first lead
                 </button>
               </div>
             )}
@@ -312,19 +323,29 @@ export default function StudentsPage() {
               <Users size={40} className="mx-auto mb-3 opacity-20" />
               <p className="text-sm font-medium text-slate-500">Select a student to view details</p>
               <p className="text-xs text-slate-400 mt-1">or</p>
-              <button
-                onClick={() => setShowModal(true)}
-                className="mt-3 flex items-center gap-2 bg-blue-600 text-white text-sm font-semibold px-5 py-2.5 rounded-xl hover:bg-blue-700 transition-colors mx-auto"
-              >
-                <Plus size={15} />
-                Add New Lead
-              </button>
+              <div className="mt-3 flex gap-2 mx-auto justify-center">
+                <button
+                  onClick={() => setShowLeadModal(true)}
+                  className="flex items-center gap-2 bg-pink-500 text-white text-sm font-semibold px-4 py-2.5 rounded-xl hover:bg-pink-600 transition-colors"
+                >
+                  <Zap size={14} />
+                  Add Lead
+                </button>
+                <button
+                  onClick={() => setShowStudentModal(true)}
+                  className="flex items-center gap-2 bg-blue-600 text-white text-sm font-semibold px-4 py-2.5 rounded-xl hover:bg-blue-700 transition-colors"
+                >
+                  <Plus size={14} />
+                  Add Student
+                </button>
+              </div>
             </div>
           </div>
         )}
       </div>
 
-      {showModal && <AddStudentModal onClose={() => setShowModal(false)} />}
+      {showLeadModal && <AddLeadModal onClose={() => setShowLeadModal(false)} />}
+      {showStudentModal && <AddStudentModal onClose={() => setShowStudentModal(false)} />}
     </div>
   )
 }
