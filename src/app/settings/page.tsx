@@ -1,21 +1,81 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import Header from '@/components/layout/Header'
-import { User, Bell, Key, Check } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
+import { User, Bell, Key, Check, LogOut, Loader2 } from 'lucide-react'
+
+interface Profile {
+  name: string
+  email: string
+  phone: string
+  role: string
+}
 
 export default function SettingsPage() {
+  const router = useRouter()
   const [apiKey, setApiKey] = useState('')
-  const [saved, setSaved] = useState(false)
+  const [keySaved, setKeySaved] = useState(false)
+  const [savingKey, setSavingKey] = useState(false)
+  const [profile, setProfile] = useState<Profile>({ name: '', email: '', phone: '', role: '' })
+  const [profileSaved, setProfileSaved] = useState(false)
+  const [savingProfile, setSavingProfile] = useState(false)
+  const [employeeId, setEmployeeId] = useState<string | null>(null)
 
   useEffect(() => {
-    setApiKey(localStorage.getItem('openai_key') || '')
+    async function load() {
+      // Load current user profile
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { data: emp } = await supabase
+          .from('employees')
+          .select('*')
+          .eq('user_id', user.id)
+          .single()
+
+        if (emp) {
+          setEmployeeId(emp.id)
+          setProfile({ name: emp.name, email: emp.email, phone: emp.phone ?? '', role: emp.role })
+        }
+      }
+
+      // Load OpenAI key indicator (don't expose the value, just check existence)
+      const res = await fetch('/api/settings/save-key?key=openai_api_key')
+      const json = await res.json()
+      if (json.value) setApiKey(json.value)
+    }
+
+    load()
   }, [])
 
-  const saveKey = () => {
-    localStorage.setItem('openai_key', apiKey)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
+  const saveKey = async () => {
+    setSavingKey(true)
+    await fetch('/api/settings/save-key', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key: 'openai_api_key', value: apiKey }),
+    })
+    setSavingKey(false)
+    setKeySaved(true)
+    setTimeout(() => setKeySaved(false), 2000)
+  }
+
+  const saveProfile = async () => {
+    if (!employeeId) return
+    setSavingProfile(true)
+    await supabase
+      .from('employees')
+      .update({ name: profile.name, phone: profile.phone })
+      .eq('id', employeeId)
+    setSavingProfile(false)
+    setProfileSaved(true)
+    setTimeout(() => setProfileSaved(false), 2000)
+  }
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut()
+    router.push('/login')
   }
 
   return (
@@ -23,7 +83,7 @@ export default function SettingsPage() {
       <Header title="Settings" />
 
       <div className="p-6 max-w-2xl space-y-5">
-        {/* AI Config — most important */}
+        {/* AI Config */}
         <div className="bg-gradient-to-r from-[#0f1f3d] to-[#1e3a8a] rounded-2xl p-5">
           <div className="flex items-center gap-2 mb-1">
             <Key size={16} className="text-blue-300" />
@@ -44,9 +104,10 @@ export default function SettingsPage() {
             />
             <button
               onClick={saveKey}
-              className="flex items-center gap-2 bg-white text-blue-700 font-semibold text-sm px-4 py-2.5 rounded-xl hover:bg-blue-50 transition-colors flex-shrink-0"
+              disabled={savingKey}
+              className="flex items-center gap-2 bg-white text-blue-700 font-semibold text-sm px-4 py-2.5 rounded-xl hover:bg-blue-50 transition-colors flex-shrink-0 disabled:opacity-70"
             >
-              {saved ? <><Check size={15} className="text-emerald-600" /> Saved!</> : 'Save Key'}
+              {savingKey ? <Loader2 size={14} className="animate-spin" /> : keySaved ? <><Check size={15} className="text-emerald-600" /> Saved!</> : 'Save Key'}
             </button>
           </div>
           {apiKey && (
@@ -63,24 +124,50 @@ export default function SettingsPage() {
             <h3 className="font-semibold text-slate-800">Profile Settings</h3>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            {[
-              { label: 'Full Name', value: 'Admin User', type: 'text' },
-              { label: 'Email', value: 'admin@upnex.ai', type: 'email' },
-              { label: 'Phone', value: '+998 90 000 0000', type: 'tel' },
-              { label: 'Role', value: 'Administrator', type: 'text' },
-            ].map(field => (
-              <div key={field.label}>
-                <label className="text-xs text-slate-400 mb-1 block">{field.label}</label>
-                <input
-                  defaultValue={field.value}
-                  type={field.type}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-            ))}
+            <div>
+              <label className="text-xs text-slate-400 mb-1 block">Full Name</label>
+              <input
+                value={profile.name}
+                onChange={e => setProfile(p => ({ ...p, name: e.target.value }))}
+                type="text"
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-slate-400 mb-1 block">Email</label>
+              <input
+                value={profile.email}
+                disabled
+                type="email"
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-400 outline-none opacity-60"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-slate-400 mb-1 block">Phone</label>
+              <input
+                value={profile.phone}
+                onChange={e => setProfile(p => ({ ...p, phone: e.target.value }))}
+                type="tel"
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-slate-400 mb-1 block">Role</label>
+              <input
+                value={profile.role}
+                disabled
+                type="text"
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-400 outline-none opacity-60"
+              />
+            </div>
           </div>
-          <button className="mt-4 bg-blue-600 text-white text-sm font-medium px-4 py-2 rounded-xl hover:bg-blue-700 transition-colors">
-            Save Changes
+          <button
+            onClick={saveProfile}
+            disabled={savingProfile || !employeeId}
+            className="mt-4 flex items-center gap-2 bg-blue-600 text-white text-sm font-medium px-4 py-2 rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-60"
+          >
+            {savingProfile ? <Loader2 size={13} className="animate-spin" /> : profileSaved ? <Check size={13} /> : null}
+            {profileSaved ? 'Saved!' : 'Save Changes'}
           </button>
         </div>
 
@@ -109,38 +196,16 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {/* Data */}
+        {/* Account */}
         <div className="bg-white rounded-2xl border border-slate-200 p-5">
-          <h3 className="font-semibold text-slate-800 mb-3">Data Management</h3>
-          <div className="flex gap-3">
-            <button
-              onClick={() => {
-                if (confirm('Reset all data to demo data? This cannot be undone.')) {
-                  localStorage.removeItem('upnex_students')
-                  localStorage.removeItem('upnex_tasks')
-                  window.location.reload()
-                }
-              }}
-              className="px-4 py-2 text-sm font-medium text-red-600 border border-red-200 rounded-xl hover:bg-red-50 transition-colors"
-            >
-              Reset Demo Data
-            </button>
-            <button
-              onClick={() => {
-                const students = localStorage.getItem('upnex_students')
-                if (!students) return
-                const blob = new Blob([students], { type: 'application/json' })
-                const url = URL.createObjectURL(blob)
-                const a = document.createElement('a')
-                a.href = url
-                a.download = `upnex-students-${new Date().toISOString().slice(0,10)}.json`
-                a.click()
-              }}
-              className="px-4 py-2 text-sm font-medium text-blue-600 border border-blue-200 rounded-xl hover:bg-blue-50 transition-colors"
-            >
-              Export Students (JSON)
-            </button>
-          </div>
+          <h3 className="font-semibold text-slate-800 mb-3">Account</h3>
+          <button
+            onClick={handleSignOut}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-600 border border-red-200 rounded-xl hover:bg-red-50 transition-colors"
+          >
+            <LogOut size={15} />
+            Sign Out
+          </button>
         </div>
       </div>
     </div>

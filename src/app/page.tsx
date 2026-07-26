@@ -1,11 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Header from '@/components/layout/Header'
 import StatCard from '@/components/dashboard/StatCard'
 import { LeadsChart, CounselorChart } from '@/components/dashboard/Charts'
 import AddStudentModal from '@/components/students/AddStudentModal'
 import { useStore } from '@/lib/store'
+import { supabase } from '@/lib/supabase'
 import { formatCurrency, getLeadScoreColor, cn } from '@/lib/utils'
 import {
   Users, Flame, Phone, Clock, GraduationCap, FileText,
@@ -15,6 +16,13 @@ import {
 export default function Dashboard() {
   const { students, tasks, toggleTask } = useStore()
   const [showModal, setShowModal] = useState(false)
+  const [revenue, setRevenue] = useState(0)
+
+  useEffect(() => {
+    supabase.from('payments').select('amount').then(({ data }) => {
+      if (data) setRevenue(data.reduce((s, p) => s + Number(p.amount), 0))
+    })
+  }, [])
 
   const hotLeads = students.filter(s => s.leadScore === 'Hot').length
   const activeStudents = students.filter(s => !['New Lead', 'Travel Completed'].includes(s.status)).length
@@ -64,7 +72,7 @@ export default function Dashboard() {
           <StatCard title="Uni Applications" value={students.filter(s => s.status === 'University Applied').length} icon={FileText} />
           <StatCard title="Admitted" value={admitted} icon={CheckCircle} gradient="bg-gradient-to-br from-[#059669] to-[#10b981]" />
           <StatCard title="Visa Approved" value={visaApproved} icon={Plane} gradient="bg-gradient-to-br from-[#7c3aed] to-[#a78bfa]" />
-          <StatCard title="Revenue" value={formatCurrency(237000)} icon={DollarSign} trend={18} subtitle="This quarter" />
+          <StatCard title="Revenue" value={formatCurrency(revenue)} icon={DollarSign} trend={18} subtitle="All time" />
         </div>
 
         {/* Charts */}

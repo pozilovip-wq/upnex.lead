@@ -1,7 +1,8 @@
 'use client'
 
 import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react'
-import { Student, MOCK_STUDENTS, AI_TASKS, PipelineStage } from './data'
+import { Student, AI_TASKS, PipelineStage } from './data'
+import { supabase } from './supabase'
 
 export interface Task {
   id: string
@@ -16,6 +17,7 @@ export interface DocEntry {
   status: 'uploaded' | 'pending' | 'missing'
   filename?: string
   uploadedAt?: string
+  fileUrl?: string
 }
 
 // keyed by studentId → docType → DocEntry
@@ -37,27 +39,19 @@ export const DOC_TYPES = [
   'Financial Documents', 'DS-160', 'I-20', 'Visa', 'Offer Letter',
 ]
 
-const INITIAL_DOCS: DocStore = {
-  's1': { 'Passport': { status: 'uploaded' }, 'Diploma': { status: 'uploaded' }, 'Transcript': { status: 'pending' }, 'English Certificate': { status: 'uploaded' }, 'Financial Documents': { status: 'missing' }, 'DS-160': { status: 'missing' }, 'I-20': { status: 'missing' }, 'Visa': { status: 'missing' }, 'Offer Letter': { status: 'missing' } },
-  's2': { 'Passport': { status: 'pending' }, 'Diploma': { status: 'uploaded' }, 'Transcript': { status: 'missing' }, 'English Certificate': { status: 'uploaded' }, 'Financial Documents': { status: 'missing' }, 'DS-160': { status: 'missing' }, 'I-20': { status: 'missing' }, 'Visa': { status: 'missing' }, 'Offer Letter': { status: 'missing' } },
-  's3': { 'Passport': { status: 'uploaded' }, 'Diploma': { status: 'uploaded' }, 'Transcript': { status: 'uploaded' }, 'English Certificate': { status: 'uploaded' }, 'Financial Documents': { status: 'uploaded' }, 'DS-160': { status: 'uploaded' }, 'I-20': { status: 'uploaded' }, 'Visa': { status: 'pending' }, 'Offer Letter': { status: 'uploaded' } },
-  's4': { 'Passport': { status: 'missing' }, 'Diploma': { status: 'missing' }, 'Transcript': { status: 'missing' }, 'English Certificate': { status: 'missing' }, 'Financial Documents': { status: 'missing' }, 'DS-160': { status: 'missing' }, 'I-20': { status: 'missing' }, 'Visa': { status: 'missing' }, 'Offer Letter': { status: 'missing' } },
-  's5': { 'Passport': { status: 'uploaded' }, 'Diploma': { status: 'uploaded' }, 'Transcript': { status: 'uploaded' }, 'English Certificate': { status: 'uploaded' }, 'Financial Documents': { status: 'uploaded' }, 'DS-160': { status: 'missing' }, 'I-20': { status: 'missing' }, 'Visa': { status: 'missing' }, 'Offer Letter': { status: 'uploaded' } },
-  's6': { 'Passport': { status: 'uploaded' }, 'Diploma': { status: 'uploaded' }, 'Transcript': { status: 'pending' }, 'English Certificate': { status: 'uploaded' }, 'Financial Documents': { status: 'missing' }, 'DS-160': { status: 'missing' }, 'I-20': { status: 'missing' }, 'Visa': { status: 'missing' }, 'Offer Letter': { status: 'missing' } },
-}
-
 interface StoreState {
   students: Student[]
   tasks: Task[]
   docs: DocStore
   notifications: AppNotification[]
-  addStudent: (s: Omit<Student, 'id' | 'createdAt' | 'leadScore' | 'enrollmentProbability' | 'nextAction' | 'tags'>) => void
-  updateStudent: (id: string, updates: Partial<Student>) => void
-  deleteStudent: (id: string) => void
-  moveStudent: (id: string, stage: PipelineStage) => void
+  loading: boolean
+  addStudent: (s: Omit<Student, 'id' | 'createdAt' | 'leadScore' | 'enrollmentProbability' | 'nextAction' | 'tags'>) => Promise<void>
+  updateStudent: (id: string, updates: Partial<Student>) => Promise<void>
+  deleteStudent: (id: string) => Promise<void>
+  moveStudent: (id: string, stage: PipelineStage) => Promise<void>
   toggleTask: (id: string) => void
-  setDocStatus: (studentId: string, docType: string, status: DocEntry['status'], filename?: string) => void
-  markNotificationRead: (id: string) => void
+  setDocStatus: (studentId: string, docType: string, status: DocEntry['status'], filename?: string, file?: File) => Promise<void>
+  markNotificationRead: (id: string) => Promise<void>
   clearNotifications: () => void
 }
 
@@ -100,6 +94,82 @@ function saveToStorage(key: string, value: unknown) {
   try { localStorage.setItem(key, JSON.stringify(value)) } catch {}
 }
 
+// Map DB row → Student JS object
+function rowToStudent(row: Record<string, unknown>): Student {
+  return {
+    id: row.id as string,
+    name: row.full_name as string,
+    email: (row.email as string) || '',
+    phone: (row.phone as string) || '',
+    telegram: (row.telegram as string) || '',
+    instagram: (row.instagram as string) || '',
+    country: (row.country as string) || 'Uzbekistan',
+    city: (row.city as string) || '',
+    age: (row.age as number) || 18,
+    school: (row.school as string) || '',
+    gpa: Number(row.gpa) || 0,
+    ielts: Number(row.ielts) || 0,
+    duolingo: row.duolingo as number | undefined,
+    sat: row.sat as number | undefined,
+    englishWaiver: Boolean(row.english_waiver),
+    major: (row.major as string) || '',
+    preferredUniversities: (row.preferred_universities as string[]) || [],
+    preferredCountry: (row.preferred_country as string) || 'USA',
+    intake: (row.intake as 'Fall' | 'Spring') || 'Fall',
+    budget: Number(row.budget) || 0,
+    parentName: (row.parent_name as string) || '',
+    parentPhone: (row.parent_phone as string) || '',
+    sponsorName: row.sponsor_name as string | undefined,
+    passportStatus: (row.passport_status as Student['passportStatus']) || 'Not Started',
+    notes: (row.notes as string) || '',
+    counselor: (row.counselor_name as string) || '',
+    status: (row.stage as PipelineStage) || 'New Lead',
+    leadScore: (row.lead_score as 'Hot' | 'Warm' | 'Cold') || 'Cold',
+    enrollmentProbability: (row.enrollment_probability as number) || 0,
+    nextAction: (row.next_action as string) || '',
+    lastContact: (row.last_contact as string) || '',
+    createdAt: ((row.created_at as string) || '').slice(0, 10),
+    tags: (row.tags as string[]) || [],
+  }
+}
+
+// Map Student JS object → DB insert/update fields
+function studentToRow(s: Partial<Student> & { name?: string }) {
+  const out: Record<string, unknown> = {}
+  if (s.name !== undefined) out.full_name = s.name
+  if (s.email !== undefined) out.email = s.email
+  if (s.phone !== undefined) out.phone = s.phone
+  if (s.telegram !== undefined) out.telegram = s.telegram
+  if (s.instagram !== undefined) out.instagram = s.instagram
+  if (s.country !== undefined) out.country = s.country
+  if (s.city !== undefined) out.city = s.city
+  if (s.age !== undefined) out.age = s.age
+  if (s.school !== undefined) out.school = s.school
+  if (s.gpa !== undefined) out.gpa = s.gpa
+  if (s.ielts !== undefined) out.ielts = s.ielts
+  if (s.duolingo !== undefined) out.duolingo = s.duolingo
+  if (s.sat !== undefined) out.sat = s.sat
+  if (s.englishWaiver !== undefined) out.english_waiver = s.englishWaiver
+  if (s.major !== undefined) out.major = s.major
+  if (s.preferredUniversities !== undefined) out.preferred_universities = s.preferredUniversities
+  if (s.preferredCountry !== undefined) out.preferred_country = s.preferredCountry
+  if (s.intake !== undefined) out.intake = s.intake
+  if (s.budget !== undefined) out.budget = s.budget
+  if (s.parentName !== undefined) out.parent_name = s.parentName
+  if (s.parentPhone !== undefined) out.parent_phone = s.parentPhone
+  if (s.sponsorName !== undefined) out.sponsor_name = s.sponsorName
+  if (s.passportStatus !== undefined) out.passport_status = s.passportStatus
+  if (s.notes !== undefined) out.notes = s.notes
+  if (s.counselor !== undefined) out.counselor_name = s.counselor
+  if (s.status !== undefined) out.stage = s.status
+  if (s.leadScore !== undefined) out.lead_score = s.leadScore
+  if (s.enrollmentProbability !== undefined) out.enrollment_probability = s.enrollmentProbability
+  if (s.nextAction !== undefined) out.next_action = s.nextAction
+  if (s.lastContact !== undefined) out.last_contact = s.lastContact || null
+  if (s.tags !== undefined) out.tags = s.tags
+  return out
+}
+
 function buildMissingNotification(studentId: string, studentName: string, missingDocs: string[]): AppNotification {
   const firstName = studentName.split(' ')[0]
   const telegramText = `Hi ${firstName}! 👋\n\nWe noticed that your file is still missing the following documents:\n\n${missingDocs.map(d => `• ${d}`).join('\n')}\n\nPlease send them as soon as possible so we can continue processing your application.\n\nThank you,\nUpnex Education Team`
@@ -116,41 +186,116 @@ function buildMissingNotification(studentId: string, studentName: string, missin
 }
 
 export function StoreProvider({ children }: { children: ReactNode }) {
-  const [students, setStudents] = useState<Student[]>(() => loadFromStorage<Student[]>('upnex_students', MOCK_STUDENTS))
+  const [students, setStudents] = useState<Student[]>([])
   const [tasks, setTasks] = useState<Task[]>(() => loadFromStorage<Task[]>('upnex_tasks', AI_TASKS as Task[]))
-  const [docs, setDocs] = useState<DocStore>(() => loadFromStorage<DocStore>('upnex_docs', INITIAL_DOCS))
-  const [notifications, setNotifications] = useState<AppNotification[]>(() => loadFromStorage<AppNotification[]>('upnex_notifications', []))
+  const [docs, setDocs] = useState<DocStore>({})
+  const [notifications, setNotifications] = useState<AppNotification[]>([])
+  const [loading, setLoading] = useState(true)
 
-  useEffect(() => { saveToStorage('upnex_students', students) }, [students])
-  useEffect(() => { saveToStorage('upnex_tasks', tasks) }, [tasks])
-  useEffect(() => { saveToStorage('upnex_docs', docs) }, [docs])
-  useEffect(() => { saveToStorage('upnex_notifications', notifications) }, [notifications])
+  // ─── Initial data load ───────────────────────────────────────────────────────
+  useEffect(() => {
+    let cancelled = false
 
-  const addStudent = useCallback((data: Omit<Student, 'id' | 'createdAt' | 'leadScore' | 'enrollmentProbability' | 'nextAction' | 'tags'>) => {
-    const ai = scoreStudent(data)
-    const newStudent: Student = {
-      ...data,
-      id: `s${Date.now()}`,
-      createdAt: new Date().toISOString().slice(0, 10),
-      tags: [data.major, data.preferredCountry].filter(Boolean),
-      ...ai,
+    async function loadData() {
+      setLoading(true)
+
+      // Load students
+      const { data: studentRows } = await supabase
+        .from('students')
+        .select('*')
+        .order('created_at', { ascending: false })
+
+      if (!cancelled && studentRows) {
+        setStudents(studentRows.map(rowToStudent))
+      }
+
+      // Load all documents
+      const { data: docRows } = await supabase
+        .from('documents')
+        .select('*')
+
+      if (!cancelled && docRows) {
+        const docStore: DocStore = {}
+        for (const row of docRows) {
+          if (!docStore[row.student_id]) docStore[row.student_id] = {}
+          docStore[row.student_id][row.doc_type] = {
+            status: row.status,
+            filename: row.filename ?? undefined,
+            uploadedAt: row.uploaded_at ?? undefined,
+            fileUrl: row.file_url ?? undefined,
+          }
+        }
+        setDocs(docStore)
+      }
+
+      // Load notifications
+      const { data: notifRows } = await supabase
+        .from('notifications')
+        .select('*')
+        .order('created_at', { ascending: false })
+
+      if (!cancelled && notifRows) {
+        setNotifications(notifRows.map(r => ({
+          id: r.id,
+          studentId: r.student_id,
+          studentName: r.student_name,
+          type: 'missing_docs' as const,
+          missingDocs: r.missing_docs ?? [],
+          createdAt: r.created_at,
+          read: r.is_read,
+          telegramText: r.telegram_text ?? '',
+        })))
+      }
+
+      if (!cancelled) setLoading(false)
     }
-    setStudents(prev => {
-      const next = [newStudent, ...prev]
-      saveToStorage('upnex_students', next)
-      return next
-    })
-    // initialise empty doc records for new student
-    setDocs(prev => {
-      const next = { ...prev, [newStudent.id]: Object.fromEntries(DOC_TYPES.map(d => [d, { status: 'missing' as const }])) }
-      saveToStorage('upnex_docs', next)
-      return next
-    })
+
+    loadData()
+    return () => { cancelled = true }
+  }, [])
+
+  // ─── addStudent ──────────────────────────────────────────────────────────────
+  const addStudent = useCallback(async (data: Omit<Student, 'id' | 'createdAt' | 'leadScore' | 'enrollmentProbability' | 'nextAction' | 'tags'>) => {
+    const ai = scoreStudent(data)
+    const tags = [data.major, data.preferredCountry].filter(Boolean)
+
+    const row = {
+      ...studentToRow({ ...data, ...ai, tags }),
+    }
+
+    const { data: inserted, error } = await supabase
+      .from('students')
+      .insert(row)
+      .select()
+      .single()
+
+    if (error || !inserted) {
+      console.error('Failed to add student:', error)
+      return
+    }
+
+    const newStudent = rowToStudent(inserted)
+    setStudents(prev => [newStudent, ...prev])
+
+    // Initialize document rows for all doc types
+    const docInserts = DOC_TYPES.map(dt => ({
+      student_id: newStudent.id,
+      doc_type: dt,
+      status: 'missing',
+    }))
+    await supabase.from('documents').insert(docInserts)
+
+    setDocs(prev => ({
+      ...prev,
+      [newStudent.id]: Object.fromEntries(DOC_TYPES.map(d => [d, { status: 'missing' as const }])),
+    }))
+
+    // Add a task in localStorage
     const newTask: Task = {
       id: `t${Date.now()}`,
       priority: 'high',
       student: data.name,
-      action: `New lead — call within 24 hours and schedule consultation`,
+      action: 'New lead — call within 24 hours and schedule consultation',
       dueDate: 'Today',
       done: false,
     }
@@ -161,44 +306,64 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     })
   }, [])
 
-  const updateStudent = useCallback((id: string, updates: Partial<Student>) => {
+  // ─── updateStudent ───────────────────────────────────────────────────────────
+  const updateStudent = useCallback(async (id: string, updates: Partial<Student>) => {
     setStudents(prev => {
-      const next = prev.map(s => {
+      const updated = prev.map(s => {
         if (s.id !== id) return s
-        const updated = { ...s, ...updates }
-        return { ...updated, ...scoreStudent(updated) }
+        const merged = { ...s, ...updates }
+        return { ...merged, ...scoreStudent(merged) }
       })
-      saveToStorage('upnex_students', next)
-      return next
+      return updated
     })
-  }, [])
 
-  const deleteStudent = useCallback((id: string) => {
-    setStudents(prev => {
-      const next = prev.filter(s => s.id !== id)
-      saveToStorage('upnex_students', next)
-      return next
-    })
+    const found = students.find(s => s.id === id)
+    if (!found) return
+    const merged = { ...found, ...updates }
+    const scored = { ...merged, ...scoreStudent(merged) }
+    const row = studentToRow(scored)
+
+    await supabase.from('students').update(row).eq('id', id)
+  }, [students])
+
+  // ─── deleteStudent ───────────────────────────────────────────────────────────
+  const deleteStudent = useCallback(async (id: string) => {
+    setStudents(prev => prev.filter(s => s.id !== id))
     setDocs(prev => {
       const next = { ...prev }
       delete next[id]
-      saveToStorage('upnex_docs', next)
       return next
     })
+    setNotifications(prev => prev.filter(n => n.studentId !== id))
+    await supabase.from('students').delete().eq('id', id)
   }, [])
 
-  const moveStudent = useCallback((id: string, stage: PipelineStage) => {
-    setStudents(prev => {
-      const next = prev.map(s => {
-        if (s.id !== id) return s
-        const updated = { ...s, status: stage }
-        return { ...updated, ...scoreStudent(updated) }
-      })
-      saveToStorage('upnex_students', next)
-      return next
+  // ─── moveStudent ─────────────────────────────────────────────────────────────
+  const moveStudent = useCallback(async (id: string, stage: PipelineStage) => {
+    setStudents(prev => prev.map(s => {
+      if (s.id !== id) return s
+      const updated = { ...s, status: stage }
+      return { ...updated, ...scoreStudent(updated) }
+    }))
+
+    const found = students.find(s => s.id === id)
+    const ai = found ? scoreStudent({ ...found, status: stage }) : {}
+
+    await supabase.from('students').update({
+      stage,
+      lead_score: (ai as { leadScore?: string }).leadScore,
+      enrollment_probability: (ai as { enrollmentProbability?: number }).enrollmentProbability,
+      next_action: (ai as { nextAction?: string }).nextAction,
+    }).eq('id', id)
+
+    // Log to activity_log
+    await supabase.from('activity_log').insert({
+      student_id: id,
+      action: `Moved to ${stage}`,
     })
-  }, [])
+  }, [students])
 
+  // ─── toggleTask (localStorage only) ─────────────────────────────────────────
   const toggleTask = useCallback((id: string) => {
     setTasks(prev => {
       const next = prev.map(t => t.id === id ? { ...t, done: !t.done } : t)
@@ -207,62 +372,104 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     })
   }, [])
 
-  const setDocStatus = useCallback((studentId: string, docType: string, status: DocEntry['status'], filename?: string) => {
+  // ─── setDocStatus ────────────────────────────────────────────────────────────
+  const setDocStatus = useCallback(async (
+    studentId: string,
+    docType: string,
+    status: DocEntry['status'],
+    filename?: string,
+    file?: File,
+  ) => {
+    let fileUrl: string | undefined
+    let filePath: string | undefined
+
+    // Upload file to Supabase Storage if provided
+    if (file && status === 'uploaded') {
+      const ext = file.name.split('.').pop()
+      filePath = `students/${studentId}/${docType}/${Date.now()}.${ext}`
+      const { error: uploadError } = await supabase.storage
+        .from('student-documents')
+        .upload(filePath, file, { upsert: true })
+
+      if (!uploadError) {
+        const { data: urlData } = supabase.storage
+          .from('student-documents')
+          .getPublicUrl(filePath)
+        fileUrl = urlData?.publicUrl
+      }
+    }
+
+    const uploadedAt = status === 'uploaded' ? new Date().toISOString() : undefined
+
+    // Upsert document row
+    await supabase.from('documents').upsert({
+      student_id: studentId,
+      doc_type: docType,
+      status,
+      filename: filename ?? null,
+      file_path: filePath ?? null,
+      file_url: fileUrl ?? null,
+      uploaded_at: uploadedAt ?? null,
+    }, { onConflict: 'student_id,doc_type' })
+
+    // Update local state
     setDocs(prev => {
       const studentDocs = { ...(prev[studentId] || {}) }
-      studentDocs[docType] = { status, filename, uploadedAt: status === 'uploaded' ? new Date().toISOString() : undefined }
+      studentDocs[docType] = { status, filename, uploadedAt, fileUrl }
       const next = { ...prev, [studentId]: studentDocs }
-      saveToStorage('upnex_docs', next)
 
-      // After updating, compute missing docs for this student and fire a notification
-      setStudents(currentStudents => {
-        const student = currentStudents.find(s => s.id === studentId)
-        if (!student) return currentStudents
-        const updatedStudentDocs = next[studentId] || {}
-        const missingDocs = DOC_TYPES.filter(dt => {
-          const entry = updatedStudentDocs[dt]
-          return !entry || entry.status === 'missing'
-        })
-        if (missingDocs.length > 0) {
-          const notif = buildMissingNotification(studentId, student.name, missingDocs)
-          setNotifications(prevNotifs => {
-            // Remove old unread notification for same student, add fresh one
-            const filtered = prevNotifs.filter(n => !(n.studentId === studentId && !n.read))
-            const updated = [notif, ...filtered]
-            saveToStorage('upnex_notifications', updated)
-            return updated
-          })
-        } else {
-          // All docs uploaded — remove any pending notification for this student
-          setNotifications(prevNotifs => {
-            const updated = prevNotifs.filter(n => n.studentId !== studentId)
-            saveToStorage('upnex_notifications', updated)
-            return updated
-          })
-        }
-        return currentStudents
+      // Compute missing docs and update notification
+      const updatedStudentDocs = next[studentId] || {}
+      const missingDocs = DOC_TYPES.filter(dt => {
+        const entry = updatedStudentDocs[dt]
+        return !entry || entry.status === 'missing'
       })
 
+      const studentName = students.find(s => s.id === studentId)?.name ?? ''
+
+      if (missingDocs.length > 0 && studentName) {
+        const notif = buildMissingNotification(studentId, studentName, missingDocs)
+
+        // Upsert notification in DB
+        supabase.from('notifications').upsert({
+          id: notif.id,
+          student_id: studentId,
+          student_name: studentName,
+          type: 'missing_docs',
+          missing_docs: missingDocs,
+          telegram_text: notif.telegramText,
+          is_read: false,
+          created_at: notif.createdAt,
+        }).then(() => {})
+
+        setNotifications(prevNotifs => {
+          const filtered = prevNotifs.filter(n => !(n.studentId === studentId && !n.read))
+          return [notif, ...filtered]
+        })
+      } else {
+        // All docs uploaded — remove notifications for this student
+        supabase.from('notifications').delete().eq('student_id', studentId).then(() => {})
+        setNotifications(prevNotifs => prevNotifs.filter(n => n.studentId !== studentId))
+      }
+
       return next
     })
+  }, [students])
+
+  // ─── markNotificationRead ────────────────────────────────────────────────────
+  const markNotificationRead = useCallback(async (id: string) => {
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n))
+    await supabase.from('notifications').update({ is_read: true }).eq('id', id)
   }, [])
 
-  const markNotificationRead = useCallback((id: string) => {
-    setNotifications(prev => {
-      const next = prev.map(n => n.id === id ? { ...n, read: true } : n)
-      saveToStorage('upnex_notifications', next)
-      return next
-    })
-  }, [])
-
+  // ─── clearNotifications ──────────────────────────────────────────────────────
   const clearNotifications = useCallback(() => {
     setNotifications([])
-    saveToStorage('upnex_notifications', [])
   }, [])
 
   return (
     <Store.Provider value={{
-      students, tasks, docs, notifications,
+      students, tasks, docs, notifications, loading,
       addStudent, updateStudent, deleteStudent, moveStudent, toggleTask,
       setDocStatus, markNotificationRead, clearNotifications,
     }}>

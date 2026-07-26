@@ -1,9 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createSupabaseServerClient } from '@/lib/supabase-server'
 
 export async function POST(req: NextRequest) {
-  const { student, mode, apiKey } = await req.json()
+  const { student, mode, apiKey: bodyKey } = await req.json()
 
-  const key = apiKey || process.env.OPENAI_API_KEY
+  // Prefer key stored in DB over request body
+  let key = bodyKey || process.env.OPENAI_API_KEY
+
+  try {
+    const supabase = await createSupabaseServerClient()
+    const { data: setting } = await supabase
+      .from('app_settings')
+      .select('value')
+      .eq('key', 'openai_api_key')
+      .single()
+
+    if (setting?.value) key = setting.value
+  } catch {}
+
   if (!key) {
     return NextResponse.json({ error: 'No OpenAI API key. Add it in Settings.' }, { status: 400 })
   }
