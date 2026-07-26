@@ -4,7 +4,7 @@ import { useState, useRef, useCallback } from 'react'
 import Header from '@/components/layout/Header'
 import { useStore, DOC_TYPES, AppNotification } from '@/lib/store'
 import { cn, getInitials } from '@/lib/utils'
-import { FileText, Upload, Check, X, Clock, ChevronDown, AlertCircle, Send, Bell, Copy } from 'lucide-react'
+import { FileText, Upload, Check, X, Clock, ChevronDown, AlertCircle, Bell, Copy, Trash2 } from 'lucide-react'
 
 const statusConfig = {
   uploaded: { label: 'Uploaded', color: 'text-emerald-600 bg-emerald-50 border-emerald-200', icon: Check },
@@ -269,12 +269,13 @@ function NotificationPanel({ notifications, onMarkRead, onClose }: {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function DocumentsPage() {
-  const { students, docs, notifications, markNotificationRead, clearNotifications } = useStore()
+  const { students, docs, notifications, markNotificationRead, clearNotifications, deleteStudent } = useStore()
 
-  const [showUpload, setShowUpload]     = useState(false)
-  const [preStudent, setPreStudent]     = useState<string | undefined>()
-  const [preDocType, setPreDocType]     = useState<string | undefined>()
-  const [showNotifs, setShowNotifs]     = useState(false)
+  const [showUpload, setShowUpload]         = useState(false)
+  const [preStudent, setPreStudent]         = useState<string | undefined>()
+  const [preDocType, setPreDocType]         = useState<string | undefined>()
+  const [showNotifs, setShowNotifs]         = useState(false)
+  const [confirmDelete, setConfirmDelete]   = useState<string | null>(null)
 
   const unread = notifications.filter(n => !n.read).length
 
@@ -338,6 +339,7 @@ export default function DocumentsPage() {
                     </th>
                   ))}
                   <th className="text-center px-4 py-3 text-slate-500 font-semibold">Completion</th>
+                  <th className="px-3 py-3" />
                 </tr>
               </thead>
               <tbody>
@@ -387,6 +389,32 @@ export default function DocumentsPage() {
                             {pct}%
                           </span>
                         </div>
+                      </td>
+                      <td className="px-3 py-3 text-center">
+                        {confirmDelete === student.id ? (
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => { deleteStudent(student.id); setConfirmDelete(null) }}
+                              className="px-2 py-1 bg-red-500 text-white text-[10px] font-bold rounded-lg hover:bg-red-600 transition-colors"
+                            >
+                              Yes
+                            </button>
+                            <button
+                              onClick={() => setConfirmDelete(null)}
+                              className="px-2 py-1 bg-slate-100 text-slate-600 text-[10px] font-bold rounded-lg hover:bg-slate-200 transition-colors"
+                            >
+                              No
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setConfirmDelete(student.id)}
+                            className="p-1.5 rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 transition-colors"
+                            title="Delete student"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        )}
                       </td>
                     </tr>
                   )
