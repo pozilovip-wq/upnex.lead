@@ -1,20 +1,30 @@
 'use client'
 
 import { useState } from 'react'
-import { Bell, Search, X } from 'lucide-react'
+import { Bell, Search, X, AlertCircle, Copy, Check } from 'lucide-react'
 import { NOTIFICATIONS } from '@/lib/data'
+import { useStore } from '@/lib/store'
 import { cn } from '@/lib/utils'
 
 export default function Header({ title }: { title: string }) {
+  const { notifications, markNotificationRead, clearNotifications } = useStore()
   const [showNotifications, setShowNotifications] = useState(false)
-  const unread = NOTIFICATIONS.filter(n => !n.read).length
+  const [copied, setCopied] = useState<string | null>(null)
+
+  // Combine static notifications from data.ts with live doc alerts from store
+  const staticUnread = NOTIFICATIONS.filter(n => !n.read).length
+  const docUnread = notifications.filter(n => !n.read).length
+  const totalUnread = staticUnread + docUnread
+
+  const copy = (id: string, text: string) => {
+    navigator.clipboard.writeText(text)
+    setCopied(id)
+    setTimeout(() => setCopied(null), 2000)
+    markNotificationRead(id)
+  }
 
   const iconMap: Record<string, string> = {
-    reply: '💬',
-    overdue: '⚠️',
-    deadline: '📅',
-    document: '📄',
-    visa: '✅',
+    reply: '💬', overdue: '⚠️', deadline: '📅', document: '📄', visa: '✅',
   }
 
   return (
@@ -38,9 +48,9 @@ export default function Header({ title }: { title: string }) {
             className="relative p-2 rounded-xl hover:bg-slate-100 transition-colors"
           >
             <Bell size={18} className="text-slate-600" />
-            {unread > 0 && (
+            {totalUnread > 0 && (
               <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center font-bold">
-                {unread}
+                {totalUnread}
               </span>
             )}
           </button>
@@ -53,7 +63,27 @@ export default function Header({ title }: { title: string }) {
                   <X size={14} className="text-slate-400" />
                 </button>
               </div>
-              <div className="max-h-72 overflow-y-auto scrollbar-thin">
+              <div className="max-h-80 overflow-y-auto scrollbar-thin">
+                {/* Live doc alerts */}
+                {notifications.map(n => (
+                  <div key={n.id} className={cn('px-4 py-3 border-b border-slate-50 hover:bg-slate-50', !n.read && 'bg-amber-50/40')}>
+                    <div className="flex items-start gap-2 mb-1.5">
+                      <AlertCircle size={13} className="text-amber-500 flex-shrink-0 mt-0.5" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-slate-800">{n.studentName} — Missing Docs</p>
+                        <p className="text-[10px] text-slate-400 mt-0.5">{n.missingDocs.join(', ')}</p>
+                      </div>
+                      {!n.read && <div className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0 mt-1" />}
+                    </div>
+                    <button
+                      onClick={() => copy(n.id, n.telegramText)}
+                      className="flex items-center gap-1 text-[10px] text-blue-600 hover:text-blue-700 font-medium ml-5"
+                    >
+                      {copied === n.id ? <><Check size={9} className="text-emerald-500" /> Copied!</> : <><Copy size={9} /> Copy Telegram message</>}
+                    </button>
+                  </div>
+                ))}
+                {/* Static notifications */}
                 {NOTIFICATIONS.map(n => (
                   <div key={n.id} className={cn('flex gap-3 px-4 py-3 border-b border-slate-50 hover:bg-slate-50 transition-colors', !n.read && 'bg-blue-50/50')}>
                     <span className="text-lg flex-shrink-0">{iconMap[n.type]}</span>
@@ -65,9 +95,13 @@ export default function Header({ title }: { title: string }) {
                   </div>
                 ))}
               </div>
-              <div className="px-4 py-2 text-center">
-                <button className="text-xs text-blue-600 font-medium hover:underline">Mark all as read</button>
-              </div>
+              {notifications.length > 0 && (
+                <div className="px-4 py-2 text-center border-t border-slate-100">
+                  <button onClick={clearNotifications} className="text-xs text-slate-400 hover:text-red-500 font-medium transition-colors">
+                    Clear doc alerts
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
