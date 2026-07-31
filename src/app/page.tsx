@@ -59,7 +59,7 @@ export default function Dashboard() {
 
         {/* Stats Row 1 */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-          <StatCard title="New Leads Today" value={newLeadsToday || 14} icon={Users} trend={12} />
+          <StatCard title="New Leads Today" value={newLeadsToday} icon={Users} trend={12} />
           <StatCard title="Active Leads" value={students.length} icon={TrendingUp} trend={8} />
           <StatCard title="Hot Leads" value={hotLeads} icon={Flame} gradient="bg-gradient-to-br from-[#1e3a5f] to-[#2563eb]" />
           <StatCard title="Calls Today" value={4} icon={Phone} />
