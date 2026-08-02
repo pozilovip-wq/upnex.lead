@@ -343,7 +343,10 @@ export default function DocumentsPage() {
                 </tr>
               </thead>
               <tbody>
-                {students.map(student => {
+                {students.filter(student => {
+                  const studentDocs = docs[student.id] || {}
+                  return DOC_TYPES.some(dt => studentDocs[dt]?.status === 'uploaded' || studentDocs[dt]?.status === 'pending')
+                }).map(student => {
                   const studentDocs = docs[student.id] || {}
                   const uploaded = DOC_TYPES.filter(dt => studentDocs[dt]?.status === 'uploaded').length
                   const pct = Math.round((uploaded / DOC_TYPES.length) * 100)
