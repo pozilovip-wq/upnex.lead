@@ -121,6 +121,7 @@ function rowToStudent(row: Record<string, unknown>): Student {
     email: (row.email as string) || '',
     phone: (row.phone as string) || '',
     telegram: (row.telegram as string) || '',
+    telegramChatId: (row.telegram_chat_id as string) || '',
     instagram: (row.instagram as string) || '',
     country: (row.country as string) || 'Uzbekistan',
     city: (row.city as string) || '',
@@ -159,6 +160,7 @@ function studentToRow(s: Partial<Student> & { name?: string }) {
   if (s.email !== undefined) out.email = s.email
   if (s.phone !== undefined) out.phone = s.phone
   if (s.telegram !== undefined) out.telegram = s.telegram
+  if (s.telegramChatId !== undefined) out.telegram_chat_id = s.telegramChatId
   if (s.instagram !== undefined) out.instagram = s.instagram
   if (s.country !== undefined) out.country = s.country
   if (s.city !== undefined) out.city = s.city

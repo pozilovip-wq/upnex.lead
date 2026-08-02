@@ -20,6 +20,7 @@ export interface Student {
   email: string
   phone: string
   telegram: string
+  telegramChatId: string
   instagram: string
   country: string
   city: string
