@@ -8,7 +8,23 @@ import AIAssistant from '@/components/ai/AIAssistant'
 import { useStore } from '@/lib/store'
 import { Student } from '@/lib/data'
 import { cn, getLeadScoreColor, getStatusColor, formatCurrency, getInitials } from '@/lib/utils'
-import { Search, Filter, Plus, ChevronRight, Mail, Phone, MapPin, Brain, Star, Users, Trash2, Zap } from 'lucide-react'
+import { Search, Filter, Plus, ChevronRight, Mail, Phone, MapPin, Brain, Star, Users, Trash2, Zap, Send } from 'lucide-react'
+
+// Junk name detection — if the "name" is actually an education/city/country answer
+const JUNK_NAME = /^(unknown|aniqlanmagan|maktab|kollej|bakalavr|magistr|litsey|sinf|universitet|bachelor|master|phd|foundation|america|amerika|usa|aqsh|yevropa|europe|toshkent|samarqand|namangan|andijon|farg|buxoro|jizzax|navoiy|surxon|xorazm|ishlaydi|hech|graduated|ha|yo'q|\d+)$/i
+
+function displayName(student: Student): string {
+  if (!student.name || JUNK_NAME.test(student.name.trim())) {
+    return student.telegram ? student.telegram : 'Unknown'
+  }
+  return student.name
+}
+
+function telegramLink(telegram: string): string {
+  if (telegram.startsWith('@')) return `https://t.me/${telegram.slice(1)}`
+  if (telegram.startsWith('id:')) return `tg://user?id=${telegram.slice(3)}`
+  return `https://t.me/${telegram}`
+}
 
 export default function StudentsPage() {
   const { students, deleteStudent } = useStore()
@@ -20,7 +36,8 @@ export default function StudentsPage() {
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
 
   const filtered = students.filter(s => {
-    const matchSearch = s.name.toLowerCase().includes(search.toLowerCase()) ||
+    const matchSearch = displayName(s).toLowerCase().includes(search.toLowerCase()) ||
+      s.telegram.toLowerCase().includes(search.toLowerCase()) ||
       s.major.toLowerCase().includes(search.toLowerCase()) ||
       s.country.toLowerCase().includes(search.toLowerCase()) ||
       s.city.toLowerCase().includes(search.toLowerCase())
@@ -116,7 +133,7 @@ export default function StudentsPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
-                    <p className="text-sm font-semibold text-slate-800 truncate">{student.name}</p>
+                    <p className="text-sm font-semibold text-slate-800 truncate">{displayName(student)}</p>
                     <span className={cn('text-[10px] font-semibold px-1.5 py-0.5 rounded-md border ml-2 flex-shrink-0', getLeadScoreColor(student.leadScore))}>
                       {student.leadScore}
                     </span>
@@ -145,7 +162,10 @@ export default function StudentsPage() {
                   {getInitials(selected.name)}
                 </div>
                 <div className="flex-1">
-                  <h2 className="text-white text-xl font-bold">{selected.name}</h2>
+                  <h2 className="text-white text-xl font-bold">{displayName(selected)}</h2>
+                  {displayName(selected) !== selected.name && selected.name && (
+                    <p className="text-blue-300 text-xs mt-0.5">Bot name: {selected.name}</p>
+                  )}
                   <p className="text-blue-200 text-sm">{selected.major} · {selected.preferredCountry}</p>
                   <div className="flex gap-2 mt-2 flex-wrap">
                     <span className={cn('text-xs font-semibold px-2 py-0.5 rounded-lg border', getLeadScoreColor(selected.leadScore))}>
@@ -165,6 +185,18 @@ export default function StudentsPage() {
                     <div className="text-blue-200 text-xs">Enrollment Probability</div>
                   </div>
                   <div className="flex gap-2">
+                    {selected.telegram && (
+                      <a
+                        href={telegramLink(selected.telegram)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1.5 px-3 py-2 bg-blue-500 hover:bg-blue-400 rounded-xl transition-colors"
+                        title="Open in Telegram"
+                      >
+                        <Send size={13} className="text-white" />
+                        <span className="text-white text-xs font-semibold">Telegram</span>
+                      </a>
+                    )}
                     <button
                       onClick={() => setConfirmDelete(selected.id)}
                       className="p-2 bg-white/10 hover:bg-red-500/30 rounded-xl transition-colors"
@@ -234,16 +266,22 @@ export default function StudentsPage() {
                 {[
                   { icon: Mail, label: 'Email', value: selected.email || '—' },
                   { icon: Phone, label: 'Phone', value: selected.phone || '—' },
-                  { label: 'Telegram', value: selected.telegram || '—' },
+                  { label: 'Telegram', value: selected.telegram || '—', link: selected.telegram ? telegramLink(selected.telegram) : undefined },
                   { label: 'Instagram', value: selected.instagram || '—' },
                   { icon: MapPin, label: 'Location', value: [selected.city, selected.country].filter(Boolean).join(', ') || '—' },
                   { label: 'Age', value: selected.age ? `${selected.age} years old` : '—' },
-                ].map(({ icon: Icon, label, value }) => (
+                ].map(({ icon: Icon, label, value, link }: any) => (
                   <div key={label} className="flex items-start gap-2">
                     {Icon && <Icon size={13} className="text-slate-400 mt-0.5 flex-shrink-0" />}
                     <div>
                       <p className="text-[10px] text-slate-400">{label}</p>
-                      <p className="text-xs text-slate-700 font-medium break-all">{value}</p>
+                      {link ? (
+                        <a href={link} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 font-medium break-all hover:underline flex items-center gap-1">
+                          <Send size={10} />{value}
+                        </a>
+                      ) : (
+                        <p className="text-xs text-slate-700 font-medium break-all">{value}</p>
+                      )}
                     </div>
                   </div>
                 ))}

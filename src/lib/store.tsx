@@ -58,6 +58,25 @@ interface StoreState {
 const Store = createContext<StoreState | null>(null)
 
 function scoreStudent(s: Partial<Student>): { leadScore: 'Hot' | 'Warm' | 'Cold'; enrollmentProbability: number; nextAction: string } {
+  // Trust the bot-assigned score when there's no real academic data to calculate from
+  if (s.leadScore && !s.gpa && !s.ielts) {
+    const pct = s.enrollmentProbability ?? (s.leadScore === 'Hot' ? 70 : s.leadScore === 'Warm' ? 50 : 20)
+    const botActions: Record<string, string> = {
+      'New Lead': 'Call student within 24 hours and introduce our services',
+      'Contacted': 'Schedule an initial consultation call this week',
+      'Consultation Scheduled': 'Prepare university list and scholarship options',
+      'Documents Requested': 'Follow up daily on missing documents',
+      'Documents Received': 'Review documents and prepare university applications',
+      'University Applied': 'Monitor application status, follow up with universities weekly',
+      'Admission Received': 'Review offer letter and confirm enrollment decision',
+      'Scholarship Awarded': 'Start visa application immediately',
+      'Visa Preparation': 'Schedule DS-160 and visa interview practice',
+      'Visa Interview': 'Coach student before interview, debrief after',
+      'Visa Approved': 'Send congratulations, arrange pre-departure orientation',
+      'Travel Completed': 'Check in after arrival, request referrals',
+    }
+    return { leadScore: s.leadScore as 'Hot' | 'Warm' | 'Cold', enrollmentProbability: pct, nextAction: botActions[s.status ?? 'New Lead'] ?? '' }
+  }
   const gpa = s.gpa ?? 0
   const ielts = s.ielts ?? 0
   const budget = s.budget ?? 0
