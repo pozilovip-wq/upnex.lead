@@ -66,7 +66,7 @@ export default function AddLeadModal({ onClose }: Props) {
       email: '',
       phone: form.phone,
       telegram: form.source === 'telegram' ? form.sourceHandle : '',
-      telegramChatId: '',
+
       instagram: form.source === 'instagram' ? form.sourceHandle : '',
       country: 'Uzbekistan',
       city: '',
