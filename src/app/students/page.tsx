@@ -20,10 +20,15 @@ function displayName(student: Student): string {
   return student.name
 }
 
-function telegramLink(telegram: string): string {
-  if (telegram.startsWith('@')) return `https://t.me/${telegram.slice(1)}`
+const OUTREACH_MESSAGE = `Assalomu alaykum! 😊 Upnex jamoasidan.
+@upnex_uzbot Botimiz orqali qoldirgan murojaatingizni ko'rib chiqdik. Sizning holatingiz bo'yicha bir nechta yaxshi imkoniyatlar bor o'z o'qishingizni Amerikada boshlash uchun.
+Qulay bo'lsa, 5 daqiqalik qo'ng'iroq qilsangiz, to'liq ma'lumot beraman.`
+
+function telegramLink(telegram: string, withMessage = false): string {
+  const msg = withMessage ? `?text=${encodeURIComponent(OUTREACH_MESSAGE)}` : ''
+  if (telegram.startsWith('@')) return `https://t.me/${telegram.slice(1)}${msg}`
   if (telegram.startsWith('id:')) return `tg://user?id=${telegram.slice(3)}`
-  return `https://t.me/${telegram}`
+  return `https://t.me/${telegram}${msg}`
 }
 
 export default function StudentsPage() {
@@ -187,11 +192,11 @@ export default function StudentsPage() {
                   <div className="flex gap-2">
                     {selected.telegram && (
                       <a
-                        href={telegramLink(selected.telegram)}
+                        href={telegramLink(selected.telegram, true)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center gap-1.5 px-3 py-2 bg-blue-500 hover:bg-blue-400 rounded-xl transition-colors"
-                        title="Open in Telegram"
+                        title="Open in Telegram with message"
                       >
                         <Send size={13} className="text-white" />
                         <span className="text-white text-xs font-semibold">Telegram</span>
