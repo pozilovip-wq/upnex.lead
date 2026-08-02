@@ -69,6 +69,7 @@ export default function AddStudentModal({ onClose }: Props) {
       email: form.email,
       phone: form.phone,
       telegram: form.telegram,
+      telegramChatId: '',
       instagram: form.instagram,
       country: form.country,
       city: form.city,
