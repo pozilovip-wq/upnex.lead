@@ -32,11 +32,12 @@ export async function POST(req: NextRequest) {
   }
 
   // Log as outgoing message in CRM messages table
-  await crm.from('messages').insert({
+  const { error: insertError } = await crm.from('messages').insert({
     telegram_chat_id: chatId,
     direction: 'out',
     text,
   })
+  if (insertError) console.error('[send-message] insert failed:', insertError.message)
 
-  return NextResponse.json({ ok: true })
+  return NextResponse.json({ ok: true, insertError: insertError?.message ?? null })
 }
