@@ -14,6 +14,24 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Missing key' }, { status: 400 })
   }
 
+  // Validate OpenAI key before saving
+  if (key === 'openai_api_key' && value) {
+    const cleanKey = (value as string).replace(/[^\x20-\x7E]/g, '').trim()
+    if (!cleanKey.startsWith('sk-')) {
+      return NextResponse.json({ error: 'Invalid key format — must start with "sk-"' }, { status: 400 })
+    }
+    const testRes = await fetch('https://api.openai.com/v1/models', {
+      headers: { Authorization: `Bearer ${cleanKey}` },
+    })
+    if (!testRes.ok) {
+      const err = await testRes.json().catch(() => ({}))
+      return NextResponse.json(
+        { error: (err as any)?.error?.message || 'OpenAI rejected this key — please check it and try again.' },
+        { status: 400 }
+      )
+    }
+  }
+
   const { error } = await supabase
     .from('app_settings')
     .upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: 'key' })

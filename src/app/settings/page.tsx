@@ -17,6 +17,7 @@ export default function SettingsPage() {
   const router = useRouter()
   const [apiKey, setApiKey] = useState('')
   const [keySaved, setKeySaved] = useState(false)
+  const [keyError, setKeyError] = useState('')
   const [savingKey, setSavingKey] = useState(false)
   const [profile, setProfile] = useState<Profile>({ name: '', email: '', phone: '', role: '' })
   const [profileSaved, setProfileSaved] = useState(false)
@@ -51,14 +52,20 @@ export default function SettingsPage() {
 
   const saveKey = async () => {
     setSavingKey(true)
-    await fetch('/api/settings/save-key', {
+    setKeyError('')
+    const res = await fetch('/api/settings/save-key', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ key: 'openai_api_key', value: apiKey }),
     })
+    const json = await res.json()
     setSavingKey(false)
-    setKeySaved(true)
-    setTimeout(() => setKeySaved(false), 2000)
+    if (!res.ok) {
+      setKeyError(json.error || 'Failed to save key')
+    } else {
+      setKeySaved(true)
+      setTimeout(() => setKeySaved(false), 3000)
+    }
   }
 
   const saveProfile = async () => {
@@ -110,10 +117,13 @@ export default function SettingsPage() {
               {savingKey ? <Loader2 size={14} className="animate-spin" /> : keySaved ? <><Check size={15} className="text-emerald-600" /> Saved!</> : 'Save Key'}
             </button>
           </div>
-          {apiKey && (
+          {keySaved && (
             <p className="text-emerald-300 text-xs mt-2 flex items-center gap-1">
-              <Check size={11} /> Key saved — AI features are now active
+              <Check size={11} /> Key verified and saved — AI features are now active
             </p>
+          )}
+          {keyError && (
+            <p className="text-red-300 text-xs mt-2">{keyError}</p>
           )}
         </div>
 
