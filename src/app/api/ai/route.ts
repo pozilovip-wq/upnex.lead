@@ -22,6 +22,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'No OpenAI API key. Add it in Settings.' }, { status: 400 })
   }
 
+  // Strip any non-ASCII chars that would corrupt the Authorization header
+  // (bullet points, emoji, newlines can sneak in if the key was mis-pasted)
+  key = key.replace(/[^\x20-\x7E]/g, '').trim()
+
+  if (!key.startsWith('sk-')) {
+    return NextResponse.json({ error: 'OpenAI API key looks invalid — it should start with "sk-". Please re-enter it in Settings.' }, { status: 400 })
+  }
+
   const studentSummary = `
 Name: ${student.name}
 Country: ${student.country}, City: ${student.city}
