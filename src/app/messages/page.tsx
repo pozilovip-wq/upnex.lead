@@ -15,12 +15,14 @@ interface Message {
 }
 
 const JUNK_NAME = /^(unknown|aniqlanmagan|maktab|kollej|bakalavr|magistr|litsey|sinf|universitet|bachelor|master|phd|foundation|america|amerika|usa|aqsh|yevropa|europe|toshkent|samarqand|namangan|andijon|farg|buxoro|jizzax|navoiy|surxon|xorazm|ishlaydi|hech|graduated|ha|yo'q|\d+)$/i
+const NAME_LIKE = /^[a-zA-ZÀ-žА-яёЎўҚқҒғҲҳ'\- ]{2,50}$/u
 
 function displayName(name: string, telegram: string): string {
-  if (!name || JUNK_NAME.test(name.trim())) {
+  const trimmed = (name ?? '').trim()
+  if (!trimmed || JUNK_NAME.test(trimmed) || !NAME_LIKE.test(trimmed)) {
     return telegram.startsWith('@') ? telegram : telegram || 'Unknown'
   }
-  return name
+  return trimmed
 }
 
 function formatTime(iso: string): string {
