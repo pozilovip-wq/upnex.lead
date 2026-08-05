@@ -44,7 +44,7 @@ export default function PipelinePage() {
         <p className="text-xs text-slate-400">{students.length} total students · drag cards between stages</p>
         <button
           onClick={() => setShowModal(true)}
-          className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3 py-1.5 rounded-xl transition-colors"
+          className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 active:scale-[0.97] text-white text-xs font-semibold px-3 py-1.5 rounded-xl transition-all duration-150"
         >
           <Plus size={13} /> Add Lead
         </button>
@@ -76,8 +76,10 @@ export default function PipelinePage() {
                       onDragStart={() => setDragging(s.id)}
                       onDragEnd={() => { setDragging(null); setDragOver(null) }}
                       className={cn(
-                        'bg-white border border-slate-200 rounded-xl p-2.5 cursor-grab active:cursor-grabbing shadow-sm hover:shadow-md transition-all',
-                        dragging === s.id && 'opacity-40 scale-95'
+                        'bg-white border border-slate-200 rounded-xl p-2.5 cursor-grab active:cursor-grabbing shadow-sm',
+                        'hover:shadow-md hover:-translate-y-0.5 hover:border-blue-200',
+                        'transition-all duration-150 ease-out',
+                        dragging === s.id && 'opacity-25 scale-95 shadow-none rotate-1'
                       )}
                     >
                       <div className="flex items-center gap-2 mb-1.5">

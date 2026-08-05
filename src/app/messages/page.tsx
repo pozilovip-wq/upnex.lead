@@ -38,6 +38,7 @@ export default function MessagesPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
   const [msgLoading, setMsgLoading] = useState(false)
+  const initialCountRef = useRef(0)
   const [text, setText] = useState('')
   const [sending, setSending] = useState(false)
   const [sendError, setSendError] = useState<string | null>(null)
@@ -72,7 +73,9 @@ export default function MessagesPage() {
       .order('created_at', { ascending: true })
       .limit(200)
       .then(({ data }) => {
-        setMessages((data ?? []) as Message[])
+        const msgs = (data ?? []) as Message[]
+        initialCountRef.current = msgs.length
+        setMessages(msgs)
         setMsgLoading(false)
       })
   }, [selected?.telegramChatId])
@@ -215,21 +218,31 @@ export default function MessagesPage() {
                   No messages yet. Send one below to start the conversation.
                 </p>
               )}
-              {messages.map(msg => (
-                <div key={msg.id} className={cn('flex', msg.direction === 'out' ? 'justify-end' : 'justify-start')}>
-                  <div className={cn(
-                    'max-w-xs px-4 py-2.5 rounded-2xl text-sm',
-                    msg.direction === 'out'
-                      ? 'bg-blue-600 text-white rounded-br-md'
-                      : 'bg-white text-slate-800 border border-slate-200 rounded-bl-md shadow-sm'
-                  )}>
-                    <p className="leading-relaxed text-xs whitespace-pre-wrap">{msg.text}</p>
-                    <p className={cn('text-[10px] mt-1', msg.direction === 'out' ? 'text-blue-200' : 'text-slate-400')}>
-                      {formatTime(msg.created_at)}
-                    </p>
+              {messages.map((msg, i) => {
+                const isNew = i >= initialCountRef.current
+                return (
+                  <div
+                    key={msg.id}
+                    className={cn(
+                      'flex',
+                      msg.direction === 'out' ? 'justify-end' : 'justify-start',
+                      isNew && 'animate-message-in'
+                    )}
+                  >
+                    <div className={cn(
+                      'max-w-xs px-4 py-2.5 rounded-2xl text-sm transition-shadow duration-150',
+                      msg.direction === 'out'
+                        ? 'bg-blue-600 text-white rounded-br-md'
+                        : 'bg-white text-slate-800 border border-slate-200 rounded-bl-md shadow-sm hover:shadow-md'
+                    )}>
+                      <p className="leading-relaxed text-xs whitespace-pre-wrap">{msg.text}</p>
+                      <p className={cn('text-[10px] mt-1', msg.direction === 'out' ? 'text-blue-200' : 'text-slate-400')}>
+                        {formatTime(msg.created_at)}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
               <div ref={bottomRef} />
             </div>
 
@@ -263,7 +276,7 @@ export default function MessagesPage() {
                 <button
                   onClick={send}
                   disabled={!text.trim() || sending}
-                  className="p-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white rounded-xl transition-colors"
+                  className="p-2.5 bg-blue-600 hover:bg-blue-700 active:scale-95 active:bg-blue-800 disabled:opacity-40 text-white rounded-xl transition-all duration-150"
                 >
                   <Send size={16} />
                 </button>

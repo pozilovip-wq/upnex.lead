@@ -80,7 +80,7 @@ export default function StudentsPage() {
               </button>
               <button
                 onClick={() => setShowLeadModal(true)}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-pink-500 hover:bg-pink-600 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-pink-500 hover:bg-pink-600 active:scale-[0.97] transition-all duration-150"
                 title="Quick lead entry"
               >
                 <Zap size={14} className="text-white" />
@@ -88,7 +88,7 @@ export default function StudentsPage() {
               </button>
               <button
                 onClick={() => setShowStudentModal(true)}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-[0.97] transition-all duration-150"
                 title="Full student profile"
               >
                 <Plus size={15} className="text-white" />
@@ -369,14 +369,14 @@ export default function StudentsPage() {
               <div className="mt-3 flex gap-2 mx-auto justify-center">
                 <button
                   onClick={() => setShowLeadModal(true)}
-                  className="flex items-center gap-2 bg-pink-500 text-white text-sm font-semibold px-4 py-2.5 rounded-xl hover:bg-pink-600 transition-colors"
+                  className="flex items-center gap-2 bg-pink-500 text-white text-sm font-semibold px-4 py-2.5 rounded-xl hover:bg-pink-600 active:scale-[0.97] transition-all duration-150"
                 >
                   <Zap size={14} />
                   Add Lead
                 </button>
                 <button
                   onClick={() => setShowStudentModal(true)}
-                  className="flex items-center gap-2 bg-blue-600 text-white text-sm font-semibold px-4 py-2.5 rounded-xl hover:bg-blue-700 transition-colors"
+                  className="flex items-center gap-2 bg-blue-600 text-white text-sm font-semibold px-4 py-2.5 rounded-xl hover:bg-blue-700 active:scale-[0.97] transition-all duration-150"
                 >
                   <Plus size={14} />
                   Add Student

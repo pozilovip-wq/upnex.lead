@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Header from '@/components/layout/Header'
-import StatCard from '@/components/dashboard/StatCard'
+import StatCard, { StatCardSkeleton } from '@/components/dashboard/StatCard'
 import { LeadsChart, CounselorChart } from '@/components/dashboard/Charts'
 import AddStudentModal from '@/components/students/AddStudentModal'
 import { useStore } from '@/lib/store'
@@ -14,7 +14,7 @@ import {
 } from 'lucide-react'
 
 export default function Dashboard() {
-  const { students, tasks, toggleTask } = useStore()
+  const { students, loading, tasks, toggleTask } = useStore()
   const [showModal, setShowModal] = useState(false)
   const [revenue, setRevenue] = useState(0)
 
@@ -51,7 +51,7 @@ export default function Dashboard() {
           </div>
           <button
             onClick={() => setShowModal(true)}
-            className="flex items-center gap-2 bg-white text-blue-700 text-xs font-bold px-4 py-2 rounded-xl transition-colors hover:bg-blue-50 flex-shrink-0"
+            className="flex items-center gap-2 bg-white text-blue-700 text-xs font-bold px-4 py-2 rounded-xl transition-all duration-150 hover:bg-blue-50 active:scale-[0.97] flex-shrink-0"
           >
             <Plus size={13} /> Add Lead
           </button>
@@ -59,20 +59,28 @@ export default function Dashboard() {
 
         {/* Stats Row 1 */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-          <StatCard title="New Leads Today" value={newLeadsToday} icon={Users} trend={12} />
-          <StatCard title="Active Leads" value={students.length} icon={TrendingUp} trend={8} />
-          <StatCard title="Hot Leads" value={hotLeads} icon={Flame} gradient="bg-gradient-to-br from-[#1e3a5f] to-[#2563eb]" />
-          <StatCard title="Calls Today" value={4} icon={Phone} />
-          <StatCard title="Follow-ups Due" value={todayTasks.length} icon={Clock} gradient="bg-gradient-to-br from-[#dc6b19] to-[#f59e0b]" />
+          {loading ? <>
+            {[0,1,2,3,4].map(i => <StatCardSkeleton key={i} gradient={i===2 ? 'bg-gradient-to-br from-[#1e3a5f] to-[#2563eb]' : i===4 ? 'bg-gradient-to-br from-[#dc6b19] to-[#f59e0b]' : undefined} />)}
+          </> : <>
+            <div className="animate-stagger" style={{'--i': 0} as React.CSSProperties}><StatCard title="New Leads Today" value={newLeadsToday} icon={Users} trend={12} /></div>
+            <div className="animate-stagger" style={{'--i': 1} as React.CSSProperties}><StatCard title="Active Leads" value={students.length} icon={TrendingUp} trend={8} /></div>
+            <div className="animate-stagger" style={{'--i': 2} as React.CSSProperties}><StatCard title="Hot Leads" value={hotLeads} icon={Flame} gradient="bg-gradient-to-br from-[#1e3a5f] to-[#2563eb]" /></div>
+            <div className="animate-stagger" style={{'--i': 3} as React.CSSProperties}><StatCard title="Calls Today" value={4} icon={Phone} /></div>
+            <div className="animate-stagger" style={{'--i': 4} as React.CSSProperties}><StatCard title="Follow-ups Due" value={todayTasks.length} icon={Clock} gradient="bg-gradient-to-br from-[#dc6b19] to-[#f59e0b]" /></div>
+          </>}
         </div>
 
         {/* Stats Row 2 */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-          <StatCard title="Active Students" value={activeStudents} icon={GraduationCap} trend={5} />
-          <StatCard title="Uni Applications" value={students.filter(s => s.status === 'University Applied').length} icon={FileText} />
-          <StatCard title="Admitted" value={admitted} icon={CheckCircle} gradient="bg-gradient-to-br from-[#059669] to-[#10b981]" />
-          <StatCard title="Visa Approved" value={visaApproved} icon={Plane} gradient="bg-gradient-to-br from-[#7c3aed] to-[#a78bfa]" />
-          <StatCard title="Revenue" value={formatCurrency(revenue)} icon={DollarSign} trend={18} subtitle="All time" />
+          {loading ? <>
+            {[0,1,2,3,4].map(i => <StatCardSkeleton key={i} gradient={i===2 ? 'bg-gradient-to-br from-[#059669] to-[#10b981]' : i===3 ? 'bg-gradient-to-br from-[#7c3aed] to-[#a78bfa]' : undefined} />)}
+          </> : <>
+            <div className="animate-stagger" style={{'--i': 5} as React.CSSProperties}><StatCard title="Active Students" value={activeStudents} icon={GraduationCap} trend={5} /></div>
+            <div className="animate-stagger" style={{'--i': 6} as React.CSSProperties}><StatCard title="Uni Applications" value={students.filter(s => s.status === 'University Applied').length} icon={FileText} /></div>
+            <div className="animate-stagger" style={{'--i': 7} as React.CSSProperties}><StatCard title="Admitted" value={admitted} icon={CheckCircle} gradient="bg-gradient-to-br from-[#059669] to-[#10b981]" /></div>
+            <div className="animate-stagger" style={{'--i': 8} as React.CSSProperties}><StatCard title="Visa Approved" value={visaApproved} icon={Plane} gradient="bg-gradient-to-br from-[#7c3aed] to-[#a78bfa]" /></div>
+            <div className="animate-stagger" style={{'--i': 9} as React.CSSProperties}><StatCard title="Revenue" value={formatCurrency(revenue)} icon={DollarSign} trend={18} subtitle="All time" /></div>
+          </>}
         </div>
 
         {/* Charts */}

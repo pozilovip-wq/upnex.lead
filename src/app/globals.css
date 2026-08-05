@@ -29,17 +29,71 @@ body {
   background: linear-gradient(180deg, #0f1f3d 0%, #1a2f52 100%);
 }
 
+/* ─── Page / section entrance ─────────────────────────────────────────────── */
 .animate-fade-in {
-  animation: fadeIn 0.3s ease-in-out;
+  animation: fadeIn 0.2s ease-out both;
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
+/* Staggered list items — apply with [style="--i:N"] for N=0,1,2… */
+.animate-stagger {
+  animation: fadeIn 0.18s ease-out both;
+  animation-delay: calc(var(--i, 0) * 35ms);
+}
+
+/* ─── Message bubbles ─────────────────────────────────────────────────────── */
+.animate-message-in {
+  animation: messageIn 0.2s cubic-bezier(0.34, 1.2, 0.64, 1) both;
+}
+
+@keyframes messageIn {
+  from { opacity: 0; transform: translateY(10px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)   scale(1); }
+}
+
+/* ─── Skeleton loader ─────────────────────────────────────────────────────── */
+.skeleton {
+  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+  border-radius: 0.75rem;
+}
+
+@keyframes shimmer {
+  from { background-position: 200% 0; }
+  to   { background-position: -200% 0; }
+}
+
+/* ─── Toast / notification ────────────────────────────────────────────────── */
+.animate-toast-in {
+  animation: toastIn 0.22s cubic-bezier(0.34, 1.2, 0.64, 1) both;
+}
+
+.animate-toast-out {
+  animation: toastOut 0.18s ease-in forwards;
+}
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateX(24px) scale(0.96); }
+  to   { opacity: 1; transform: translateX(0)    scale(1); }
+}
+
+@keyframes toastOut {
+  from { opacity: 1; transform: translateX(0)    scale(1); }
+  to   { opacity: 0; transform: translateX(24px) scale(0.95); }
+}
+
+/* ─── Drag-and-drop ───────────────────────────────────────────────────────── */
+.kanban-drag-over {
+  background: rgba(37, 99, 235, 0.06) !important;
+  border: 2px dashed #2563eb !important;
+}
+
+/* ─── Scrollbar ───────────────────────────────────────────────────────────── */
 .scrollbar-thin::-webkit-scrollbar { width: 4px; }
 .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
 .scrollbar-thin::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-
-.kanban-drag-over { background: rgba(37, 99, 235, 0.06) !important; border: 2px dashed #2563eb !important; }
