@@ -5,7 +5,7 @@ import Header from '@/components/layout/Header'
 import { useStore } from '@/lib/store'
 import { supabase } from '@/lib/supabase'
 import { getInitials, cn } from '@/lib/utils'
-import { Send, Brain, MessageSquare, Phone, Mail, Instagram, ExternalLink } from 'lucide-react'
+import { Send, Brain, MessageSquare, Phone, Mail, AtSign, ExternalLink } from 'lucide-react'
 
 interface Message {
   id: string
@@ -260,7 +260,7 @@ export default function MessagesPage() {
                     title={`Instagram: ${selected.instagram}`}
                     className="p-1.5 rounded-lg bg-slate-100 hover:bg-pink-50 hover:text-pink-600 text-slate-500 transition-all duration-150"
                   >
-                    <Instagram size={14} />
+                    <AtSign size={14} />
                   </a>
                 )}
               </div>
