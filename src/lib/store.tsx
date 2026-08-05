@@ -208,7 +208,11 @@ function buildMissingNotification(studentId: string, studentName: string, missin
 
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [students, setStudents] = useState<Student[]>([])
-  const [tasks, setTasks] = useState<Task[]>(() => loadFromStorage<Task[]>('upnex_tasks', AI_TASKS as Task[]))
+  // Reset done=false on every load — completion state only persists within a session,
+  // not across reloads, until tasks are stored in a real database.
+  const [tasks, setTasks] = useState<Task[]>(() =>
+    loadFromStorage<Task[]>('upnex_tasks', AI_TASKS as Task[]).map(t => ({ ...t, done: false }))
+  )
   const [docs, setDocs] = useState<DocStore>({})
   const [notifications, setNotifications] = useState<AppNotification[]>([])
   const [loading, setLoading] = useState(true)
