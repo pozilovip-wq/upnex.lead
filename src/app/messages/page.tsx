@@ -5,7 +5,7 @@ import Header from '@/components/layout/Header'
 import { useStore } from '@/lib/store'
 import { supabase } from '@/lib/supabase'
 import { getInitials, cn } from '@/lib/utils'
-import { Send, Brain, MessageSquare } from 'lucide-react'
+import { Send, Brain, MessageSquare, Phone, Mail, Instagram, ExternalLink } from 'lucide-react'
 
 interface Message {
   id: string
@@ -197,14 +197,72 @@ export default function MessagesPage() {
           <div className="flex-1 flex flex-col bg-slate-50">
             {/* Chat header */}
             <div className="bg-white border-b border-slate-200 px-5 py-3 flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-400 to-blue-700 flex items-center justify-center text-white text-sm font-bold">
+              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-400 to-blue-700 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
                 {getInitials(displayName(selected.name, selected.telegram))}
               </div>
-              <div>
+              <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-slate-800">{displayName(selected.name, selected.telegram)}</p>
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-slate-400 truncate">
                   {selected.telegram || `ID: ${selected.telegramChatId}`} · {selected.status}
                 </p>
+              </div>
+              {/* Channel action buttons */}
+              <div className="flex items-center gap-1.5 flex-shrink-0">
+                {/* Telegram — always shown, primary channel */}
+                {(selected.telegram || selected.telegramChatId) && (
+                  <a
+                    href={
+                      selected.telegram?.startsWith('@')
+                        ? `https://t.me/${selected.telegram.slice(1)}`
+                        : selected.telegram
+                          ? `https://t.me/${selected.telegram}`
+                          : `tg://user?id=${selected.telegramChatId}`
+                    }
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title="Open in Telegram"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-semibold rounded-lg transition-all duration-150"
+                  >
+                    <ExternalLink size={12} />
+                    Telegram
+                  </a>
+                )}
+                {/* Phone — shown if phone exists */}
+                {selected.phone && (
+                  <a
+                    href={`tel:${selected.phone}`}
+                    title={`Call ${selected.phone}`}
+                    className="p-1.5 rounded-lg bg-slate-100 hover:bg-emerald-50 hover:text-emerald-600 text-slate-500 transition-all duration-150"
+                  >
+                    <Phone size={14} />
+                  </a>
+                )}
+                {/* Email — shown if email exists */}
+                {selected.email && (
+                  <a
+                    href={`mailto:${selected.email}`}
+                    title={`Email ${selected.email}`}
+                    className="p-1.5 rounded-lg bg-slate-100 hover:bg-blue-50 hover:text-blue-600 text-slate-500 transition-all duration-150"
+                  >
+                    <Mail size={14} />
+                  </a>
+                )}
+                {/* Instagram — shown if instagram exists */}
+                {selected.instagram && (
+                  <a
+                    href={
+                      selected.instagram.startsWith('@')
+                        ? `https://instagram.com/${selected.instagram.slice(1)}`
+                        : `https://instagram.com/${selected.instagram}`
+                    }
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title={`Instagram: ${selected.instagram}`}
+                    className="p-1.5 rounded-lg bg-slate-100 hover:bg-pink-50 hover:text-pink-600 text-slate-500 transition-all duration-150"
+                  >
+                    <Instagram size={14} />
+                  </a>
+                )}
               </div>
             </div>
 
