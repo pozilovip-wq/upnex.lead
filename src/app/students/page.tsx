@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import Header from '@/components/layout/Header'
 import AddStudentModal from '@/components/students/AddStudentModal'
 import AddLeadModal from '@/components/students/AddLeadModal'
@@ -33,22 +34,55 @@ function telegramLink(telegram: string, withMessage = false): string {
 
 export default function StudentsPage() {
   const { students, deleteStudent } = useStore()
+  const searchParams = useSearchParams()
   const [search, setSearch] = useState('')
   const [filterScore, setFilterScore] = useState<string>('all')
+  const [filterStatus, setFilterStatus] = useState<string>('')
   const [selected, setSelected] = useState<Student | null>(null)
   const [showLeadModal, setShowLeadModal] = useState(false)
   const [showStudentModal, setShowStudentModal] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
 
+  // Apply URL params from dashboard navigation
+  useEffect(() => {
+    const score = searchParams.get('score')
+    const status = searchParams.get('status')
+    const name = searchParams.get('name')
+    const filter = searchParams.get('filter')
+    if (score) setFilterScore(score)
+    if (status) setFilterStatus(status)
+    if (name) setSearch(name)
+    if (filter === 'today') {
+      const today = new Date().toISOString().slice(0, 10)
+      setFilterStatus(`__today:${today}`)
+    }
+  }, [searchParams])
+
+  const today = new Date().toISOString().slice(0, 10)
+
   const filtered = students.filter(s => {
-    const matchSearch = displayName(s).toLowerCase().includes(search.toLowerCase()) ||
+    const matchSearch = !search || displayName(s).toLowerCase().includes(search.toLowerCase()) ||
       s.telegram.toLowerCase().includes(search.toLowerCase()) ||
       s.major.toLowerCase().includes(search.toLowerCase()) ||
       s.country.toLowerCase().includes(search.toLowerCase()) ||
       s.city.toLowerCase().includes(search.toLowerCase())
     const matchScore = filterScore === 'all' || s.leadScore === filterScore
-    return matchSearch && matchScore
+    const matchStatus = !filterStatus
+      ? true
+      : filterStatus.startsWith('__today:')
+        ? s.createdAt === today
+        : s.status === filterStatus
+    return matchSearch && matchScore && matchStatus
   })
+
+  // Auto-select student when arriving via ?name= from dashboard
+  useEffect(() => {
+    const name = searchParams.get('name')
+    if (name && students.length > 0 && !selected) {
+      const match = students.find(s => s.name === name)
+      if (match) setSelected(match)
+    }
+  }, [searchParams, students])
 
   const handleDelete = (id: string) => {
     deleteStudent(id)

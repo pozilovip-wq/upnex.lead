@@ -10,6 +10,7 @@ interface StatCardProps {
   iconBg?: string
   subtitle?: string
   loading?: boolean
+  onClick?: () => void
 }
 
 export function StatCardSkeleton({ gradient }: { gradient?: string }) {
@@ -30,19 +31,23 @@ export function StatCardSkeleton({ gradient }: { gradient?: string }) {
   )
 }
 
-export default function StatCard({ title, value, icon: Icon, trend, gradient, iconBg, subtitle, loading }: StatCardProps) {
+export default function StatCard({ title, value, icon: Icon, trend, gradient, iconBg, subtitle, loading, onClick }: StatCardProps) {
   if (loading) return <StatCardSkeleton gradient={gradient} />
 
   const positive = (trend ?? 0) >= 0
 
   return (
-    <div className={cn(
-      'relative rounded-2xl p-5 overflow-hidden',
-      'transition-all duration-200 ease-out',
-      'hover:shadow-lg hover:-translate-y-0.5 hover:scale-[1.01]',
-      'active:scale-[0.99] active:shadow-md',
-      gradient || 'bg-white border border-slate-200'
-    )}>
+    <div
+      onClick={onClick}
+      className={cn(
+        'relative rounded-2xl p-5 overflow-hidden',
+        'transition-all duration-200 ease-out',
+        'hover:shadow-lg hover:-translate-y-0.5 hover:scale-[1.01]',
+        'active:scale-[0.99] active:shadow-md',
+        onClick && 'cursor-pointer',
+        gradient || 'bg-white border border-slate-200'
+      )}
+    >
       <div className="flex items-start justify-between">
         <div>
           <p className={cn('text-xs font-medium mb-1', gradient ? 'text-white/70' : 'text-slate-500')}>{title}</p>
@@ -55,7 +60,7 @@ export default function StatCard({ title, value, icon: Icon, trend, gradient, ic
             </div>
           )}
         </div>
-        <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center transition-transform duration-200 group-hover:scale-110', iconBg || (gradient ? 'bg-white/20' : 'bg-blue-50'))}>
+        <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center transition-transform duration-200', iconBg || (gradient ? 'bg-white/20' : 'bg-blue-50'))}>
           <Icon size={20} className={gradient ? 'text-white' : 'text-blue-600'} />
         </div>
       </div>

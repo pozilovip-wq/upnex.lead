@@ -72,32 +72,43 @@ export function LeadsChart() {
   )
 }
 
+const ENROLLED_STAGES = ['Admission Received', 'Scholarship Awarded', 'Visa Preparation', 'Visa Interview', 'Visa Approved', 'Travel Completed']
+
 export function CounselorChart() {
   const [data, setData] = useState<{ name: string; students: number; contracts: number; revenue: number }[]>([])
 
   useEffect(() => {
     Promise.all([
-      supabase.from('employees').select('id, name'),
-      supabase.from('students').select('counselor_id, counselor_name, stage'),
+      supabase.from('students').select('id, counselor_name, stage'),
       supabase.from('payments').select('amount, student_id'),
-    ]).then(([{ data: emps }, { data: studs }, { data: pays }]) => {
-      if (!emps || !studs) return
-      const rows = emps.map(e => {
-        const myStudents = studs.filter(s => s.counselor_id === e.id || s.counselor_name === e.name)
-        const enrolled = myStudents.filter(s =>
-          ['Admission Received', 'Scholarship Awarded', 'Visa Preparation', 'Visa Interview', 'Visa Approved', 'Travel Completed'].includes(s.stage)
-        ).length
-        const myStudentIds = new Set(myStudents.map((_, i) => i)) // approximate
-        const rev = pays
-          ? pays.filter(p => myStudents.some((_, i) => i === myStudentIds.size)).reduce((a, p) => a + Number(p.amount), 0)
-          : 0
-        return {
-          name: e.name.split(' ')[0],
-          students: myStudents.length,
-          contracts: enrolled,
-          revenue: Math.round(rev / 1000),
-        }
-      }).filter(r => r.students > 0)
+    ]).then(([{ data: studs }, { data: pays }]) => {
+      if (!studs || studs.length === 0) return
+
+      // Group by counselor_name
+      const map: Record<string, { ids: string[]; contracts: number }> = {}
+      for (const s of studs) {
+        const name = (s.counselor_name as string | null)?.trim() || 'Unassigned'
+        if (!map[name]) map[name] = { ids: [], contracts: 0 }
+        map[name].ids.push(s.id)
+        if (ENROLLED_STAGES.includes(s.stage)) map[name].contracts++
+      }
+
+      const payMap: Record<string, number> = {}
+      for (const p of pays ?? []) {
+        payMap[p.student_id] = (payMap[p.student_id] ?? 0) + Number(p.amount)
+      }
+
+      const rows = Object.entries(map)
+        .map(([fullName, { ids, contracts }]) => ({
+          name: fullName.split(' ')[0],
+          students: ids.length,
+          contracts,
+          revenue: Math.round(ids.reduce((sum, id) => sum + (payMap[id] ?? 0), 0) / 1000),
+        }))
+        .filter(r => r.name !== 'Unassigned')
+        .sort((a, b) => b.students - a.students)
+        .slice(0, 8)
+
       if (rows.length > 0) setData(rows)
     })
   }, [])

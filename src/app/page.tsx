@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import Header from '@/components/layout/Header'
 import StatCard, { StatCardSkeleton } from '@/components/dashboard/StatCard'
 import { LeadsChart, CounselorChart } from '@/components/dashboard/Charts'
@@ -14,6 +15,7 @@ import {
 } from 'lucide-react'
 
 export default function Dashboard() {
+  const router = useRouter()
   const { students, loading, tasks, toggleTask } = useStore()
   const [showModal, setShowModal] = useState(false)
   const [revenue, setRevenue] = useState(0)
@@ -30,6 +32,9 @@ export default function Dashboard() {
   const admitted = students.filter(s => ['Admission Received', 'Scholarship Awarded', 'Visa Preparation', 'Visa Interview', 'Visa Approved', 'Travel Completed'].includes(s.status)).length
   const todayTasks = tasks.filter(t => t.dueDate === 'Today' && !t.done)
   const newLeadsToday = students.filter(s => s.createdAt === new Date().toISOString().slice(0, 10)).length
+  const uniApplied = students.filter(s => s.status === 'University Applied').length
+
+  const urgentStudent = todayTasks[0]?.student
 
   return (
     <div className="animate-fade-in">
@@ -44,9 +49,34 @@ export default function Dashboard() {
           <div className="flex-1">
             <p className="text-white font-semibold text-sm">AI Daily Briefing</p>
             <p className="text-blue-200 text-xs mt-0.5">
-              You have <span className="text-white font-bold">{todayTasks.length} urgent tasks</span> today.
-              {todayTasks[0] && <> {todayTasks[0].student} needs immediate attention.</>}
-              {' '}Total <span className="text-white font-bold">{students.length} students</span> in your pipeline.
+              You have{' '}
+              <button
+                onClick={() => router.push('/tasks')}
+                className="text-white font-bold underline-offset-2 hover:underline"
+              >
+                {todayTasks.length} urgent tasks
+              </button>{' '}
+              today.
+              {urgentStudent && (
+                <>
+                  {' '}
+                  <button
+                    onClick={() => router.push(`/students?name=${encodeURIComponent(urgentStudent)}`)}
+                    className="text-white font-bold underline-offset-2 hover:underline"
+                  >
+                    {urgentStudent}
+                  </button>{' '}
+                  needs immediate attention.
+                </>
+              )}
+              {' '}Total{' '}
+              <button
+                onClick={() => router.push('/students')}
+                className="text-white font-bold underline-offset-2 hover:underline"
+              >
+                {students.length} students
+              </button>{' '}
+              in your pipeline.
             </p>
           </div>
           <button
@@ -62,11 +92,26 @@ export default function Dashboard() {
           {loading ? <>
             {[0,1,2,3,4].map(i => <StatCardSkeleton key={i} gradient={i===2 ? 'bg-gradient-to-br from-[#1e3a5f] to-[#2563eb]' : i===4 ? 'bg-gradient-to-br from-[#dc6b19] to-[#f59e0b]' : undefined} />)}
           </> : <>
-            <div className="animate-stagger" style={{'--i': 0} as React.CSSProperties}><StatCard title="New Leads Today" value={newLeadsToday} icon={Users} trend={12} /></div>
-            <div className="animate-stagger" style={{'--i': 1} as React.CSSProperties}><StatCard title="Active Leads" value={students.length} icon={TrendingUp} trend={8} /></div>
-            <div className="animate-stagger" style={{'--i': 2} as React.CSSProperties}><StatCard title="Hot Leads" value={hotLeads} icon={Flame} gradient="bg-gradient-to-br from-[#1e3a5f] to-[#2563eb]" /></div>
-            <div className="animate-stagger" style={{'--i': 3} as React.CSSProperties}><StatCard title="Calls Today" value={4} icon={Phone} /></div>
-            <div className="animate-stagger" style={{'--i': 4} as React.CSSProperties}><StatCard title="Follow-ups Due" value={todayTasks.length} icon={Clock} gradient="bg-gradient-to-br from-[#dc6b19] to-[#f59e0b]" /></div>
+            <div className="animate-stagger" style={{'--i': 0} as React.CSSProperties}>
+              <StatCard title="New Leads Today" value={newLeadsToday} icon={Users} trend={12}
+                onClick={() => router.push('/students?filter=today')} />
+            </div>
+            <div className="animate-stagger" style={{'--i': 1} as React.CSSProperties}>
+              <StatCard title="Active Leads" value={students.length} icon={TrendingUp} trend={8}
+                onClick={() => router.push('/students')} />
+            </div>
+            <div className="animate-stagger" style={{'--i': 2} as React.CSSProperties}>
+              <StatCard title="Hot Leads" value={hotLeads} icon={Flame} gradient="bg-gradient-to-br from-[#1e3a5f] to-[#2563eb]"
+                onClick={() => router.push('/students?score=Hot')} />
+            </div>
+            <div className="animate-stagger" style={{'--i': 3} as React.CSSProperties}>
+              <StatCard title="Calls Today" value={4} icon={Phone}
+                onClick={() => router.push('/tasks')} />
+            </div>
+            <div className="animate-stagger" style={{'--i': 4} as React.CSSProperties}>
+              <StatCard title="Follow-ups Due" value={todayTasks.length} icon={Clock} gradient="bg-gradient-to-br from-[#dc6b19] to-[#f59e0b]"
+                onClick={() => router.push('/tasks')} />
+            </div>
           </>}
         </div>
 
@@ -75,11 +120,26 @@ export default function Dashboard() {
           {loading ? <>
             {[0,1,2,3,4].map(i => <StatCardSkeleton key={i} gradient={i===2 ? 'bg-gradient-to-br from-[#059669] to-[#10b981]' : i===3 ? 'bg-gradient-to-br from-[#7c3aed] to-[#a78bfa]' : undefined} />)}
           </> : <>
-            <div className="animate-stagger" style={{'--i': 5} as React.CSSProperties}><StatCard title="Active Students" value={activeStudents} icon={GraduationCap} trend={5} /></div>
-            <div className="animate-stagger" style={{'--i': 6} as React.CSSProperties}><StatCard title="Uni Applications" value={students.filter(s => s.status === 'University Applied').length} icon={FileText} /></div>
-            <div className="animate-stagger" style={{'--i': 7} as React.CSSProperties}><StatCard title="Admitted" value={admitted} icon={CheckCircle} gradient="bg-gradient-to-br from-[#059669] to-[#10b981]" /></div>
-            <div className="animate-stagger" style={{'--i': 8} as React.CSSProperties}><StatCard title="Visa Approved" value={visaApproved} icon={Plane} gradient="bg-gradient-to-br from-[#7c3aed] to-[#a78bfa]" /></div>
-            <div className="animate-stagger" style={{'--i': 9} as React.CSSProperties}><StatCard title="Revenue" value={formatCurrency(revenue)} icon={DollarSign} trend={18} subtitle="All time" /></div>
+            <div className="animate-stagger" style={{'--i': 5} as React.CSSProperties}>
+              <StatCard title="Active Students" value={activeStudents} icon={GraduationCap} trend={5}
+                onClick={() => router.push('/students')} />
+            </div>
+            <div className="animate-stagger" style={{'--i': 6} as React.CSSProperties}>
+              <StatCard title="Uni Applications" value={uniApplied} icon={FileText}
+                onClick={() => router.push('/students?status=University+Applied')} />
+            </div>
+            <div className="animate-stagger" style={{'--i': 7} as React.CSSProperties}>
+              <StatCard title="Admitted" value={admitted} icon={CheckCircle} gradient="bg-gradient-to-br from-[#059669] to-[#10b981]"
+                onClick={() => router.push('/students?status=Admission+Received')} />
+            </div>
+            <div className="animate-stagger" style={{'--i': 8} as React.CSSProperties}>
+              <StatCard title="Visa Approved" value={visaApproved} icon={Plane} gradient="bg-gradient-to-br from-[#7c3aed] to-[#a78bfa]"
+                onClick={() => router.push('/students?status=Visa+Approved')} />
+            </div>
+            <div className="animate-stagger" style={{'--i': 9} as React.CSSProperties}>
+              <StatCard title="Revenue" value={formatCurrency(revenue)} icon={DollarSign} trend={18} subtitle="All time"
+                onClick={() => router.push('/reports')} />
+            </div>
           </>}
         </div>
 
@@ -98,9 +158,12 @@ export default function Dashboard() {
                 <h3 className="font-semibold text-slate-800">AI Task Manager</h3>
                 <p className="text-xs text-slate-400">Click to mark as done</p>
               </div>
-              <span className="bg-blue-50 text-blue-600 text-xs font-semibold px-3 py-1 rounded-full">
-                {todayTasks.length} urgent
-              </span>
+              <button
+                onClick={() => router.push('/tasks')}
+                className="bg-blue-50 text-blue-600 text-xs font-semibold px-3 py-1 rounded-full hover:bg-blue-100 transition-colors"
+              >
+                {todayTasks.length} urgent →
+              </button>
             </div>
             <div className="space-y-2">
               {tasks.slice(0, 6).map(task => (
@@ -119,7 +182,13 @@ export default function Dashboard() {
                   )} />
                   <div className="flex-1 min-w-0">
                     <p className={cn('text-xs text-slate-700 leading-relaxed', task.done && 'line-through text-slate-400')}>
-                      <span className="font-semibold">{task.student}</span> — {task.action}
+                      <button
+                        className="font-semibold hover:text-blue-600 hover:underline underline-offset-2 transition-colors"
+                        onClick={e => { e.stopPropagation(); router.push(`/students?name=${encodeURIComponent(task.student)}`) }}
+                      >
+                        {task.student}
+                      </button>
+                      {' '}— {task.action}
                     </p>
                     <p className="text-[10px] text-slate-400 mt-0.5">Due: {task.dueDate}</p>
                   </div>
@@ -140,7 +209,9 @@ export default function Dashboard() {
           <div className="bg-white rounded-2xl border border-slate-200 p-5">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold text-slate-800">Hot Leads</h3>
-              <Star size={14} className="text-amber-400" />
+              <button onClick={() => router.push('/students?score=Hot')} className="hover:opacity-70 transition-opacity">
+                <Star size={14} className="text-amber-400" />
+              </button>
             </div>
             {students.filter(s => s.leadScore === 'Hot').length === 0 ? (
               <div className="text-center py-8">
@@ -151,12 +222,16 @@ export default function Dashboard() {
             ) : (
               <div className="space-y-3">
                 {students.filter(s => s.leadScore === 'Hot').slice(0, 5).map(s => (
-                  <div key={s.id} className="flex items-center gap-3">
+                  <button
+                    key={s.id}
+                    onClick={() => router.push(`/students?name=${encodeURIComponent(s.name)}`)}
+                    className="w-full flex items-center gap-3 hover:bg-slate-50 rounded-xl p-1 -mx-1 transition-colors group"
+                  >
                     <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-                      {s.name.split(' ').map(n => n[0]).join('')}
+                      {s.name.split(' ').map((n: string) => n[0]).join('')}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-slate-800 truncate">{s.name}</p>
+                    <div className="flex-1 min-w-0 text-left">
+                      <p className="text-xs font-semibold text-slate-800 truncate group-hover:text-blue-600 transition-colors">{s.name}</p>
                       <p className="text-[10px] text-slate-400 truncate">{s.major} · {s.preferredCountry}</p>
                     </div>
                     <div className="flex flex-col items-end gap-1">
@@ -165,7 +240,7 @@ export default function Dashboard() {
                       </span>
                       <span className="text-[10px] text-emerald-600 font-medium">{s.enrollmentProbability}%</span>
                     </div>
-                  </div>
+                  </button>
                 ))}
               </div>
             )}
