@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Header from '@/components/layout/Header'
 import AddStudentModal from '@/components/students/AddStudentModal'
@@ -32,7 +32,7 @@ function telegramLink(telegram: string, withMessage = false): string {
   return `https://t.me/${telegram}${msg}`
 }
 
-export default function StudentsPage() {
+function StudentsContent() {
   const { students, deleteStudent } = useStore()
   const searchParams = useSearchParams()
   const [search, setSearch] = useState('')
@@ -424,5 +424,13 @@ export default function StudentsPage() {
       {showLeadModal && <AddLeadModal onClose={() => setShowLeadModal(false)} />}
       {showStudentModal && <AddStudentModal onClose={() => setShowStudentModal(false)} />}
     </div>
+  )
+}
+
+export default function StudentsPage() {
+  return (
+    <Suspense fallback={null}>
+      <StudentsContent />
+    </Suspense>
   )
 }
