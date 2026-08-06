@@ -148,7 +148,7 @@ function rowToStudent(row: Record<string, unknown>): Student {
     enrollmentProbability: (row.enrollment_probability as number) || 0,
     nextAction: (row.next_action as string) || '',
     lastContact: (row.last_contact as string) || '',
-    createdAt: ((row.created_at as string) || '').slice(0, 10),
+    createdAt: (row.created_at as string) || '',
     tags: (row.tags as string[]) || [],
   }
 }

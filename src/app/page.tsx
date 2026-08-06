@@ -31,7 +31,8 @@ export default function Dashboard() {
   const visaApproved = students.filter(s => s.status === 'Visa Approved' || s.status === 'Travel Completed').length
   const admitted = students.filter(s => ['Admission Received', 'Scholarship Awarded', 'Visa Preparation', 'Visa Interview', 'Visa Approved', 'Travel Completed'].includes(s.status)).length
   const todayTasks = tasks.filter(t => t.dueDate === 'Today' && !t.done)
-  const newLeadsToday = students.filter(s => s.createdAt === new Date().toISOString().slice(0, 10)).length
+  const todayPrefix = new Date().toISOString().slice(0, 10)
+  const newLeadsToday = students.filter(s => s.createdAt.slice(0, 10) === todayPrefix).length
   const uniApplied = students.filter(s => s.status === 'University Applied').length
 
   const urgentStudent = todayTasks[0]?.student
