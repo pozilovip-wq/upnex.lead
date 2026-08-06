@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, Users, GitBranch, Calendar, MessageSquare,
   FolderOpen, Settings, Bell, ChevronLeft, ChevronRight,
-  Brain, CheckSquare, BarChart3, UserCheck, Shield, Sparkles
+  Brain, CheckSquare, BarChart3, UserCheck, Shield
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { NOTIFICATIONS } from '@/lib/data'
@@ -37,9 +37,7 @@ export default function Sidebar() {
     )}>
       {/* Logo */}
       <div className={cn('flex items-center gap-3 px-4 py-5 border-b border-white/10', collapsed && 'justify-center px-2')}>
-        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center flex-shrink-0">
-          <Sparkles size={16} className="text-white" />
-        </div>
+        <img src="/upnex-logo.svg" alt="Upnex" className="w-8 h-8 rounded-xl flex-shrink-0" />
         {!collapsed && (
           <div>
             <div className="text-white font-bold text-sm tracking-wide">Upnex AI</div>
