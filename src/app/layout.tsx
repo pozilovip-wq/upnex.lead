@@ -6,7 +6,7 @@ import AuthAwareLayout from '@/components/layout/AuthAwareLayout'
 export const metadata: Metadata = {
   title: 'Upnex AI CRM',
   description: 'AI-powered education consulting CRM',
-  icons: { icon: '/upnex-logo.svg', apple: '/upnex-logo.svg' },
+  icons: { icon: '/upnex-logo.png', apple: '/upnex-logo.png' },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

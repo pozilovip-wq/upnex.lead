@@ -37,7 +37,7 @@ export default function Sidebar() {
     )}>
       {/* Logo */}
       <div className={cn('flex items-center gap-3 px-4 py-5 border-b border-white/10', collapsed && 'justify-center px-2')}>
-        <img src="/upnex-logo.svg" alt="Upnex" className="w-8 h-8 rounded-xl flex-shrink-0" />
+        <img src="/upnex-logo.png" alt="Upnex" className="w-8 h-8 rounded-xl flex-shrink-0" />
         {!collapsed && (
           <div>
             <div className="text-white font-bold text-sm tracking-wide">Upnex AI</div>

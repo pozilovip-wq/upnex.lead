@@ -38,7 +38,7 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="text-center mb-8">
-          <img src="/upnex-logo.svg" alt="Upnex" className="w-16 h-16 rounded-2xl mx-auto mb-4" />
+          <img src="/upnex-logo.png" alt="Upnex" className="w-16 h-16 rounded-2xl mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-white">Upnex CRM</h1>
           <p className="text-blue-300 text-sm mt-1">Sign in to your account</p>
         </div>
