@@ -45,7 +45,7 @@ interface StoreState {
   docs: DocStore
   notifications: AppNotification[]
   loading: boolean
-  addStudent: (s: Omit<Student, 'id' | 'createdAt' | 'leadScore' | 'enrollmentProbability' | 'nextAction' | 'tags'>) => Promise<void>
+  addStudent: (s: Omit<Student, 'id' | 'createdAt' | 'leadScore' | 'enrollmentProbability' | 'nextAction' | 'tags'>) => Promise<Student | undefined>
   updateStudent: (id: string, updates: Partial<Student>) => Promise<void>
   deleteStudent: (id: string) => Promise<void>
   moveStudent: (id: string, stage: PipelineStage) => Promise<void>
@@ -329,6 +329,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       saveToStorage('upnex_tasks', next)
       return next
     })
+    return newStudent
   }, [])
 
   // ─── updateStudent ───────────────────────────────────────────────────────────
