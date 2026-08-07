@@ -4,7 +4,7 @@ import { useState, useRef, useCallback, useEffect } from 'react'
 import Header from '@/components/layout/Header'
 import { useStore, DOC_TYPES, AppNotification } from '@/lib/store'
 import { cn, getInitials } from '@/lib/utils'
-import { FileText, Upload, Check, X, Clock, AlertCircle, Bell, Copy, Trash2, Search } from 'lucide-react'
+import { FileText, Upload, Check, X, Clock, AlertCircle, Bell, Copy, Trash2, Search, UserPlus } from 'lucide-react'
 
 const JUNK_NAME = /^(unknown|aniqlanmagan|maktab|kollej|bakalavr|magistr|litsey|sinf|universitet|bachelor|master|phd|foundation|america|amerika|usa|aqsh|yevropa|europe|toshkent|samarqand|namangan|andijon|farg|buxoro|jizzax|navoiy|surxon|xorazm|ishlaydi|hech|graduated|ha|yo'q|\d+)$/i
 const NAME_LIKE = /^[a-zA-ZÀ-žА-яёЎўҚқҒғҲҳ'\- ]{2,50}$/u
@@ -27,7 +27,7 @@ interface UploadModalProps {
 }
 
 function UploadModal({ preselectedStudentId, preselectedDocType, onClose }: UploadModalProps) {
-  const { students, docs, setDocStatus } = useStore()
+  const { students, docs, setDocStatus, addStudent } = useStore()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [selectedStudentId, setSelectedStudentId] = useState(preselectedStudentId || '')
@@ -38,11 +38,17 @@ function UploadModal({ preselectedStudentId, preselectedDocType, onClose }: Uplo
   const [errors, setErrors]                       = useState<string[]>([])
   const [studentSearch, setStudentSearch]         = useState('')
   const [pickerOpen, setPickerOpen]               = useState(false)
+  const [newStudentMode, setNewStudentMode]       = useState(false)
+  const [newStudentName, setNewStudentName]       = useState('')
+  const [addingStudent, setAddingStudent]         = useState(false)
   const pickerRef                                 = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
-      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) setPickerOpen(false)
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
+        setPickerOpen(false)
+        setNewStudentMode(false)
+      }
     }
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
@@ -59,11 +65,25 @@ function UploadModal({ preselectedStudentId, preselectedDocType, onClose }: Uplo
   const filteredNamed   = namedStudents.filter(filterFn)
   const filteredUnnamed = unnamedStudents.filter(filterFn)
 
-  function pickStudent(id: string, name: string) {
+  function pickStudent(id: string) {
     setSelectedStudentId(id)
     setStudentSearch('')
     setPickerOpen(false)
+    setNewStudentMode(false)
     setShowReplaceConfirm(false)
+  }
+
+  async function handleAddNewStudent() {
+    const name = newStudentName.trim()
+    if (!name) return
+    setAddingStudent(true)
+    await addStudent({ name, status: 'New Lead', major: '', preferredCountry: '', phone: '', email: '', telegram: '', instagram: '', counselorName: '', telegramChatId: null })
+    // find the newly inserted student by name (latest added)
+    const newS = [...students].reverse().find(s => s.name === name)
+    if (newS) pickStudent(newS.id)
+    setNewStudentMode(false)
+    setNewStudentName('')
+    setAddingStudent(false)
   }
 
   const existingEntry = selectedStudentId && selectedDocType
@@ -130,11 +150,11 @@ function UploadModal({ preselectedStudentId, preselectedDocType, onClose }: Uplo
 
         <div className="px-6 py-5 space-y-4">
           {/* Student picker */}
-          <div ref={pickerRef}>
+          <div ref={pickerRef} className="relative">
             <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Student *</label>
 
             {/* Selected student pill */}
-            {selectedStudent && !pickerOpen && (
+            {selectedStudent && !pickerOpen && !newStudentMode && (
               <button
                 onClick={() => { setStudentSearch(''); setPickerOpen(true) }}
                 className="w-full flex items-center gap-3 px-3 py-2.5 bg-blue-50 border border-blue-200 rounded-xl text-left hover:bg-blue-100 transition-colors"
@@ -151,7 +171,7 @@ function UploadModal({ preselectedStudentId, preselectedDocType, onClose }: Uplo
             )}
 
             {/* Search input */}
-            {(!selectedStudent || pickerOpen) && (
+            {(!selectedStudent || pickerOpen) && !newStudentMode && (
               <div className="relative">
                 <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                 <input
@@ -165,52 +185,93 @@ function UploadModal({ preselectedStudentId, preselectedDocType, onClose }: Uplo
               </div>
             )}
 
-            {/* Dropdown */}
-            {pickerOpen && (
-              <div className="mt-1 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden max-h-56 overflow-y-auto z-10 relative">
-                {filteredNamed.length === 0 && filteredUnnamed.length === 0 && (
-                  <p className="text-xs text-slate-400 text-center py-4">No matches</p>
-                )}
-                {filteredNamed.map(s => (
+            {/* Inline new-student form */}
+            {newStudentMode && (
+              <div className="flex gap-2">
+                <input
+                  autoFocus
+                  value={newStudentName}
+                  onChange={e => setNewStudentName(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') handleAddNewStudent(); if (e.key === 'Escape') { setNewStudentMode(false); setNewStudentName('') } }}
+                  placeholder="Full name..."
+                  className="flex-1 px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <button
+                  onMouseDown={handleAddNewStudent}
+                  disabled={!newStudentName.trim() || addingStudent}
+                  className="px-4 py-2.5 bg-blue-600 text-white text-xs font-semibold rounded-xl hover:bg-blue-700 disabled:opacity-40 transition-colors flex-shrink-0"
+                >
+                  {addingStudent ? '…' : 'Add'}
+                </button>
+                <button
+                  onMouseDown={() => { setNewStudentMode(false); setNewStudentName('') }}
+                  className="px-3 py-2.5 bg-slate-100 text-slate-500 text-xs font-semibold rounded-xl hover:bg-slate-200 transition-colors flex-shrink-0"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+
+            {/* Floating dropdown */}
+            {pickerOpen && !newStudentMode && (
+              <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden z-50">
+                <div className="max-h-52 overflow-y-auto">
+                  {filteredNamed.length === 0 && filteredUnnamed.length === 0 && (
+                    <p className="text-xs text-slate-400 text-center py-3">No matches</p>
+                  )}
+                  {filteredNamed.map(s => (
+                    <button
+                      key={s.id}
+                      onMouseDown={() => pickStudent(s.id)}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-blue-50 transition-colors text-left border-b border-slate-50 last:border-0"
+                    >
+                      <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">
+                        {getInitials(s.name)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-slate-800 truncate">{s.name}</p>
+                        <p className="text-[10px] text-slate-400 truncate">{s.status}</p>
+                      </div>
+                      <span className={cn(
+                        'text-[10px] font-medium px-1.5 py-0.5 rounded-md flex-shrink-0',
+                        s.leadScore === 'Hot' ? 'bg-red-50 text-red-600' :
+                        s.leadScore === 'Warm' ? 'bg-amber-50 text-amber-600' : 'bg-slate-100 text-slate-500'
+                      )}>{s.leadScore}</span>
+                    </button>
+                  ))}
+                  {filteredUnnamed.length > 0 && (
+                    <>
+                      <div className="px-3 py-1.5 bg-slate-50 border-t border-slate-100">
+                        <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">No name yet</p>
+                      </div>
+                      {filteredUnnamed.map(s => (
+                        <button
+                          key={s.id}
+                          onMouseDown={() => pickStudent(s.id)}
+                          className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-slate-50 transition-colors text-left border-b border-slate-50 last:border-0"
+                        >
+                          <div className="w-7 h-7 rounded-full bg-slate-200 flex items-center justify-center text-slate-400 text-[10px] font-bold flex-shrink-0">?</div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs text-slate-500 truncate">{s.telegram || s.telegramChatId || 'Unknown'}</p>
+                            <p className="text-[10px] text-slate-400">{s.status}</p>
+                          </div>
+                        </button>
+                      ))}
+                    </>
+                  )}
+                </div>
+                {/* + New Student footer */}
+                <div className="border-t border-slate-100">
                   <button
-                    key={s.id}
-                    onMouseDown={() => pickStudent(s.id, s.name)}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-blue-50 transition-colors text-left"
+                    onMouseDown={() => { setPickerOpen(false); setNewStudentMode(true); setNewStudentName(studentSearch) }}
+                    className="w-full flex items-center gap-2 px-3 py-2.5 text-blue-600 hover:bg-blue-50 transition-colors text-left"
                   >
-                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">
-                      {getInitials(s.name)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-slate-800 truncate">{s.name}</p>
-                      <p className="text-[10px] text-slate-400 truncate">{s.status}</p>
-                    </div>
-                    <span className={cn(
-                      'text-[10px] font-medium px-1.5 py-0.5 rounded-md flex-shrink-0',
-                      s.leadScore === 'Hot' ? 'bg-red-50 text-red-600' :
-                      s.leadScore === 'Warm' ? 'bg-amber-50 text-amber-600' : 'bg-slate-100 text-slate-500'
-                    )}>{s.leadScore}</span>
+                    <UserPlus size={14} />
+                    <span className="text-xs font-semibold">
+                      {studentSearch ? `Add "${studentSearch}" as new student` : 'Add new student'}
+                    </span>
                   </button>
-                ))}
-                {filteredUnnamed.length > 0 && (
-                  <>
-                    <div className="px-3 py-1.5 bg-slate-50 border-t border-slate-100">
-                      <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">No name yet</p>
-                    </div>
-                    {filteredUnnamed.map(s => (
-                      <button
-                        key={s.id}
-                        onMouseDown={() => pickStudent(s.id, s.name)}
-                        className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-slate-50 transition-colors text-left"
-                      >
-                        <div className="w-7 h-7 rounded-full bg-slate-200 flex items-center justify-center text-slate-400 text-[10px] font-bold flex-shrink-0">?</div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs text-slate-500 truncate">{s.telegram || s.telegramChatId || 'Unknown'}</p>
-                          <p className="text-[10px] text-slate-400">{s.status}</p>
-                        </div>
-                      </button>
-                    ))}
-                  </>
-                )}
+                </div>
               </div>
             )}
           </div>
