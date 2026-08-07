@@ -131,6 +131,7 @@ function StudentsContent() {
   }
 
   return (
+    <>
     <div className="animate-fade-in flex flex-col" style={{ height: '100dvh' }}>
       <Header title="Students" />
 
@@ -515,9 +516,10 @@ function StudentsContent() {
         )}
       </div>
 
+    </div>
       {showLeadModal && <AddLeadModal onClose={() => setShowLeadModal(false)} />}
       {showStudentModal && <AddStudentModal onClose={() => setShowStudentModal(false)} />}
-    </div>
+    </>
   )
 }
 

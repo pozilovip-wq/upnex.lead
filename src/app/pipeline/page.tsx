@@ -38,6 +38,7 @@ export default function PipelinePage() {
   }
 
   return (
+    <>
     <div className="animate-fade-in flex flex-col h-screen">
       <Header title="Student Pipeline" />
       <div className="flex items-center justify-between px-4 py-2 bg-white border-b border-slate-100">
@@ -112,7 +113,8 @@ export default function PipelinePage() {
           })}
         </div>
       </div>
-      {showModal && <AddStudentModal onClose={() => setShowModal(false)} />}
     </div>
+      {showModal && <AddStudentModal onClose={() => setShowModal(false)} />}
+    </>
   )
 }

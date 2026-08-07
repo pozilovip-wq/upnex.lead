@@ -38,6 +38,7 @@ export default function Dashboard() {
   const urgentStudent = todayTasks[0]?.student
 
   return (
+    <>
     <div className="animate-fade-in">
       <Header title="Dashboard" />
 
@@ -249,7 +250,8 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {showModal && <AddStudentModal onClose={() => setShowModal(false)} />}
     </div>
+      {showModal && <AddStudentModal onClose={() => setShowModal(false)} />}
+    </>
   )
 }
