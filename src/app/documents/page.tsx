@@ -136,7 +136,7 @@ function UploadModal({ preselectedStudentId, preselectedDocType, onClose }: Uplo
 
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md animate-fade-in">
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md animate-fade-in flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100">
           <div>
@@ -148,7 +148,7 @@ function UploadModal({ preselectedStudentId, preselectedDocType, onClose }: Uplo
           </button>
         </div>
 
-        <div className="px-6 py-5 space-y-4">
+        <div className="px-6 py-5 space-y-4 overflow-y-auto">
           {/* Student picker */}
           <div ref={pickerRef} className="relative">
             <div className="flex items-center justify-between mb-1.5">
