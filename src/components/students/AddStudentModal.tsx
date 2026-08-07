@@ -31,7 +31,7 @@ export default function AddStudentModal({ onClose }: Props) {
   const { addStudent } = useStore()
   const [section, setSection] = useState('personal')
   const [form, setForm] = useState({
-    name: '', email: '', phone: '', telegram: '', instagram: '',
+    name: '', email: '', phone: '', telegram: '', instagram: '', // telegram/instagram kept in state for store compatibility but not shown
     country: 'Uzbekistan', city: '', age: '',
     school: '', gpa: '', ielts: '', duolingo: '', sat: '',
     englishWaiver: false,
@@ -185,16 +185,6 @@ export default function AddStudentModal({ onClose }: Props) {
                     <Mail size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                     <input className={cn(inputClass(), 'pl-8')} type="email" placeholder="student@gmail.com" value={form.email} onChange={e => set('email', e.target.value)} />
                   </div>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs font-medium text-slate-500 mb-1 block">Telegram</label>
-                  <input className={inputClass()} placeholder="@username" value={form.telegram} onChange={e => set('telegram', e.target.value)} />
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-slate-500 mb-1 block">Instagram</label>
-                  <input className={inputClass()} placeholder="@username" value={form.instagram} onChange={e => set('instagram', e.target.value)} />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
