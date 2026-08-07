@@ -151,7 +151,17 @@ function UploadModal({ preselectedStudentId, preselectedDocType, onClose }: Uplo
         <div className="px-6 py-5 space-y-4">
           {/* Student picker */}
           <div ref={pickerRef} className="relative">
-            <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Student *</label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-xs font-semibold text-slate-500">Student *</label>
+              {!newStudentMode && (
+                <button
+                  onMouseDown={() => { setPickerOpen(false); setNewStudentMode(true); setNewStudentName(studentSearch) }}
+                  className="flex items-center gap-1 text-[11px] font-semibold text-blue-600 hover:text-blue-700 transition-colors"
+                >
+                  <UserPlus size={12} /> New Student
+                </button>
+              )}
+            </div>
 
             {/* Selected student pill */}
             {selectedStudent && !pickerOpen && !newStudentMode && (
