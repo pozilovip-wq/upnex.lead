@@ -77,7 +77,7 @@ function UploadModal({ preselectedStudentId, preselectedDocType, onClose }: Uplo
     const name = newStudentName.trim()
     if (!name) return
     setAddingStudent(true)
-    await addStudent({ name, status: 'New Lead', major: '', preferredCountry: '', phone: '', email: '', telegram: '', instagram: '', counselorName: '', telegramChatId: null })
+    await addStudent({ name, status: 'New Lead', major: '', preferredCountry: '', phone: '', email: '', telegram: '', instagram: '', counselorName: '', telegramChatId: undefined })
     // find the newly inserted student by name (latest added)
     const newS = [...students].reverse().find(s => s.name === name)
     if (newS) pickStudent(newS.id)
