@@ -1,10 +1,17 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import Header from '@/components/layout/Header'
 import { useStore, DOC_TYPES, AppNotification } from '@/lib/store'
 import { cn, getInitials } from '@/lib/utils'
-import { FileText, Upload, Check, X, Clock, ChevronDown, AlertCircle, Bell, Copy, Trash2 } from 'lucide-react'
+import { FileText, Upload, Check, X, Clock, AlertCircle, Bell, Copy, Trash2, Search } from 'lucide-react'
+
+const JUNK_NAME = /^(unknown|aniqlanmagan|maktab|kollej|bakalavr|magistr|litsey|sinf|universitet|bachelor|master|phd|foundation|america|amerika|usa|aqsh|yevropa|europe|toshkent|samarqand|namangan|andijon|farg|buxoro|jizzax|navoiy|surxon|xorazm|ishlaydi|hech|graduated|ha|yo'q|\d+)$/i
+const NAME_LIKE = /^[a-zA-ZÀ-žА-яёЎўҚқҒғҲҳ'\- ]{2,50}$/u
+function hasRealName(name: string) {
+  const t = (name ?? '').trim()
+  return t.length > 0 && NAME_LIKE.test(t) && !JUNK_NAME.test(t)
+}
 
 const statusConfig = {
   uploaded: { label: 'Uploaded', color: 'text-emerald-600 bg-emerald-50 border-emerald-200', icon: Check },
@@ -29,6 +36,35 @@ function UploadModal({ preselectedStudentId, preselectedDocType, onClose }: Uplo
   const [showReplaceConfirm, setShowReplaceConfirm] = useState(false)
   const [done, setDone]                           = useState(false)
   const [errors, setErrors]                       = useState<string[]>([])
+  const [studentSearch, setStudentSearch]         = useState('')
+  const [pickerOpen, setPickerOpen]               = useState(false)
+  const pickerRef                                 = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) setPickerOpen(false)
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
+
+  const selectedStudent = students.find(s => s.id === selectedStudentId) ?? null
+  const namedStudents   = students.filter(s => hasRealName(s.name))
+  const unnamedStudents = students.filter(s => !hasRealName(s.name))
+
+  const q = studentSearch.toLowerCase()
+  const filterFn = (s: typeof students[0]) =>
+    !q || s.name.toLowerCase().includes(q) || (s.telegram ?? '').toLowerCase().includes(q)
+
+  const filteredNamed   = namedStudents.filter(filterFn)
+  const filteredUnnamed = unnamedStudents.filter(filterFn)
+
+  function pickStudent(id: string, name: string) {
+    setSelectedStudentId(id)
+    setStudentSearch('')
+    setPickerOpen(false)
+    setShowReplaceConfirm(false)
+  }
 
   const existingEntry = selectedStudentId && selectedDocType
     ? docs[selectedStudentId]?.[selectedDocType]
@@ -94,21 +130,89 @@ function UploadModal({ preselectedStudentId, preselectedDocType, onClose }: Uplo
 
         <div className="px-6 py-5 space-y-4">
           {/* Student picker */}
-          <div>
+          <div ref={pickerRef}>
             <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Student *</label>
-            <div className="relative">
-              <select
-                value={selectedStudentId}
-                onChange={e => { setSelectedStudentId(e.target.value); setShowReplaceConfirm(false) }}
-                className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 appearance-none outline-none focus:ring-2 focus:ring-blue-500"
+
+            {/* Selected student pill */}
+            {selectedStudent && !pickerOpen && (
+              <button
+                onClick={() => { setStudentSearch(''); setPickerOpen(true) }}
+                className="w-full flex items-center gap-3 px-3 py-2.5 bg-blue-50 border border-blue-200 rounded-xl text-left hover:bg-blue-100 transition-colors"
               >
-                <option value="">— Select student —</option>
-                {students.map(s => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
+                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">
+                  {getInitials(selectedStudent.name)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-slate-800 truncate">{selectedStudent.name}</p>
+                  <p className="text-[10px] text-slate-500">{selectedStudent.status}</p>
+                </div>
+                <span className="text-[10px] text-blue-500 font-medium flex-shrink-0">Change</span>
+              </button>
+            )}
+
+            {/* Search input */}
+            {(!selectedStudent || pickerOpen) && (
+              <div className="relative">
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                <input
+                  autoFocus
+                  value={studentSearch}
+                  onChange={e => { setStudentSearch(e.target.value); setPickerOpen(true) }}
+                  onFocus={() => setPickerOpen(true)}
+                  placeholder="Type name or @username..."
+                  className="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            )}
+
+            {/* Dropdown */}
+            {pickerOpen && (
+              <div className="mt-1 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden max-h-56 overflow-y-auto z-10 relative">
+                {filteredNamed.length === 0 && filteredUnnamed.length === 0 && (
+                  <p className="text-xs text-slate-400 text-center py-4">No matches</p>
+                )}
+                {filteredNamed.map(s => (
+                  <button
+                    key={s.id}
+                    onMouseDown={() => pickStudent(s.id, s.name)}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-blue-50 transition-colors text-left"
+                  >
+                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">
+                      {getInitials(s.name)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-slate-800 truncate">{s.name}</p>
+                      <p className="text-[10px] text-slate-400 truncate">{s.status}</p>
+                    </div>
+                    <span className={cn(
+                      'text-[10px] font-medium px-1.5 py-0.5 rounded-md flex-shrink-0',
+                      s.leadScore === 'Hot' ? 'bg-red-50 text-red-600' :
+                      s.leadScore === 'Warm' ? 'bg-amber-50 text-amber-600' : 'bg-slate-100 text-slate-500'
+                    )}>{s.leadScore}</span>
+                  </button>
                 ))}
-              </select>
-              <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-            </div>
+                {filteredUnnamed.length > 0 && (
+                  <>
+                    <div className="px-3 py-1.5 bg-slate-50 border-t border-slate-100">
+                      <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">No name yet</p>
+                    </div>
+                    {filteredUnnamed.map(s => (
+                      <button
+                        key={s.id}
+                        onMouseDown={() => pickStudent(s.id, s.name)}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-slate-50 transition-colors text-left"
+                      >
+                        <div className="w-7 h-7 rounded-full bg-slate-200 flex items-center justify-center text-slate-400 text-[10px] font-bold flex-shrink-0">?</div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs text-slate-500 truncate">{s.telegram || s.telegramChatId || 'Unknown'}</p>
+                          <p className="text-[10px] text-slate-400">{s.status}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Doc type grid */}
