@@ -461,6 +461,7 @@ export default function DocumentsPage() {
   }, [])
 
   return (
+    <>
     <div className="animate-fade-in">
       <Header title="Document Management" />
 
@@ -619,6 +620,7 @@ export default function DocumentsPage() {
         </div>
       </div>
 
+    </div>
       {showUpload && (
         <UploadModal
           preselectedStudentId={preStudent}
@@ -626,6 +628,6 @@ export default function DocumentsPage() {
           onClose={() => setShowUpload(false)}
         />
       )}
-    </div>
+    </>
   )
 }
